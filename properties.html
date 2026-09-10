@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse Properties - HomeLink Kenya</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="navbar-root"></div>
+
+<section class="page-header">
+  <h1>Browse Properties</h1>
+  <form class="search-bar search-bar-inline" id="browse-search">
+    <div class="search-field">
+      <span class="field-icon">&#128205;</span>
+      <div>
+        <label>Location</label>
+        <input type="text" name="location" id="f-location" placeholder="e.g. Nairobi, Mombasa...">
+      </div>
+    </div>
+    <div class="search-field">
+      <span class="field-icon">&#8962;</span>
+      <div>
+        <label>Property Type</label>
+        <select name="type" id="f-type">
+          <option value="">Any Type</option>
+          <option>Apartment</option>
+          <option>Bedsitter</option>
+          <option>House</option>
+          <option>Studio</option>
+        </select>
+      </div>
+    </div>
+    <div class="search-field">
+      <span class="field-icon">&#128176;</span>
+      <div>
+        <label>Price Range</label>
+        <select name="maxPrice" id="f-price">
+          <option value="">Any Price</option>
+          <option value="15000">Up to KSh 15,000</option>
+          <option value="30000">Up to KSh 30,000</option>
+          <option value="60000">Up to KSh 60,000</option>
+          <option value="100000">Up to KSh 100,000</option>
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="search-btn">&#128269; Search</button>
+  </form>
+</section>
+
+<section class="featured">
+  <div class="property-grid" id="results-grid">
+    <p class="empty-state">Loading properties&hellip;</p>
+  </div>
+</section>
+
+<div id="footer-root"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/footer.js"></script>
+<script src="js/property-card.js"></script>
+<script src="js/properties.js"></script>
+</body>
+</html>
