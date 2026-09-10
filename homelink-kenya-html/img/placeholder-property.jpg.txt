@@ -1,0 +1,2 @@
+Drop a real placeholder JPG here named "placeholder-property.jpg"
+(shown on listings that have no uploaded photos yet).

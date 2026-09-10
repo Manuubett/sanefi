@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login / Sign Up - HomeLink Kenya</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="navbar-root"></div>
+
+<section class="auth-page">
+  <div class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="form-subtitle">Log in, or create an account to save properties and list your own.</p>
+
+    <p class="alert alert-error" id="auth-error" style="display:none;"></p>
+
+    <form class="auth-form" id="login-form">
+      <label>Email <input type="email" name="email" required></label>
+      <label>Password <input type="password" name="password" required></label>
+      <button type="submit" class="btn-primary btn-large">Log In</button>
+    </form>
+
+    <div class="auth-divider">or</div>
+
+    <form class="auth-form" id="signup-form">
+      <label>Email <input type="email" name="email" required></label>
+      <label>Password (min 6 characters) <input type="password" name="password" minlength="6" required></label>
+      <button type="submit" class="btn-secondary btn-large">Create Account</button>
+    </form>
+  </div>
+</section>
+
+<div id="footer-root"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/footer.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/footer.js"></script>
+</body>
+</html>
