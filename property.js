@@ -7,7 +7,7 @@ const id = new URLSearchParams(window.location.search).get("id");
 if (!id) {
   detailRoot.innerHTML = `<p class="empty-state">No property specified. <a href="properties.html">Browse all properties</a>.</p>`;
 } else {
-  db.collection("properties").doc(id).get().then((doc) => {
+  db.collection("propertiess").doc(id).get().then((doc) => {
     if (!doc.exists) {
       detailRoot.innerHTML = `<p class="empty-state">That listing wasn't found. <a href="properties.html">Browse all properties</a>.</p>`;
       return;
