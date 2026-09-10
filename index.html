@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sanefi Consult - Find Your Perfect Home</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="navbar-root"></div>
+
+<section class="hero">
+  <div class="hero-content">
+    <h1>Find Your Next Home<br>in Kenya</h1>
+    <p>Discover the best rental houses, apartments and bedsitters from trusted landlords and agents across Kenya &mdash; brought to you by Sanefi Consult.</p>
+
+    <form class="search-bar" id="hero-search">
+      <div class="search-field">
+        <span class="field-icon">&#128205;</span>
+        <div>
+          <label>Location</label>
+          <input type="text" name="location" placeholder="e.g. Nairobi, Mombasa, Kisumu...">
+        </div>
+      </div>
+      <div class="search-field">
+        <span class="field-icon">&#8962;</span>
+        <div>
+          <label>Property Type</label>
+          <select name="type">
+            <option value="">Any Type</option>
+            <option>Apartment</option>
+            <option>Bedsitter</option>
+            <option>House</option>
+            <option>Studio</option>
+          </select>
+        </div>
+      </div>
+      <div class="search-field">
+        <span class="field-icon">&#128176;</span>
+        <div>
+          <label>Price Range</label>
+          <select name="maxPrice">
+            <option value="">Any Price</option>
+            <option value="15000">Up to KSh 15,000</option>
+            <option value="30000">Up to KSh 30,000</option>
+            <option value="60000">Up to KSh 60,000</option>
+            <option value="100000">Up to KSh 100,000</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="search-btn">&#128269; Search</button>
+    </form>
+  </div>
+</section>
+
+<section class="featured">
+  <div class="section-heading">
+    <div>
+      <h2>Featured Properties</h2>
+      <p>Handpicked properties for you. Find your ideal home today.</p>
+    </div>
+    <a href="properties.html" class="view-all">View All Properties &rarr;</a>
+  </div>
+
+  <div class="property-grid" id="featured-grid">
+    <p class="empty-state">Loading properties&hellip;</p>
+  </div>
+</section>
+
+<section class="perks">
+  <div class="perk"><span class="perk-icon">&#8962;</span><h4>Verified Listings</h4><p>Get genuine and up-to-date property listings.</p></div>
+  <div class="perk"><span class="perk-icon">&#128737;</span><h4>Secure &amp; Safe</h4><p>Your information is always protected.</p></div>
+  <div class="perk"><span class="perk-icon">&#128172;</span><h4>Direct Contact</h4><p>Chat or call landlords and agents directly.</p></div>
+  <div class="perk"><span class="perk-icon">&#128205;</span><h4>Great Locations</h4><p>Properties in the best neighbourhoods.</p></div>
+  <div class="perk"><span class="perk-icon">&#128241;</span><h4>Mobile Friendly</h4><p>Browse and apply on any device.</p></div>
+</section>
+
+<div id="footer-root"></div>
+
+<!-- Firebase compat SDKs: no bundler needed, works straight in the browser -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/footer.js"></script>
+<script src="js/property-card.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>
