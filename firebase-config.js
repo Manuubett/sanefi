@@ -28,3 +28,23 @@ const CLOUDINARY_UPLOAD_PRESET = "sanefilink";
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Offline persistence: Firestore caches query results in the browser
+// (IndexedDB), so repeat visits read from the local cache instead of
+// hitting the network every time, and listings still show up if the
+// connection drops. Combined with onSnapshot() listeners on the pages
+// that list properties, this also means changes made in the admin panel
+// (approvals, new listings, etc.) show up automatically without a
+// manual page reload.
+db.enablePersistence().catch((err) => {
+  if (err.code === "failed-precondition") {
+    // Happens if multiple tabs are open at once — persistence can only
+    // run in one tab. The app still works, just without the local cache.
+    console.warn("Firestore persistence disabled: multiple tabs open.");
+  } else if (err.code === "unimplemented") {
+    // Current browser doesn't support the features needed for persistence.
+    console.warn("Firestore persistence not supported in this browser.");
+  } else {
+    console.warn("Firestore persistence could not be enabled:", err);
+  }
+});
