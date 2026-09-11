@@ -21,22 +21,33 @@ document.getElementById("browse-search").addEventListener("submit", (e) => {
 
 function loadResults() {
   const location = (params.get("location") || "").trim().toLowerCase();
-  const type = params.get("type") || "";
+  const type = (params.get("type") || "").trim().toLowerCase();
   const maxPrice = params.get("maxPrice") ? Number(params.get("maxPrice")) : null;
 
+  // onSnapshot instead of get(): Firestore serves the local cache instantly
+  // on repeat visits, then keeps listening so newly approved listings (or
+  // ones an admin just unbooked/unpublished) show up here automatically.
   db.collection("propertiess")
     .where("status", "==", "approved")
     .orderBy("createdAt", "desc")
-    .get()
-    .then((snapshot) => {
+    .onSnapshot((snapshot) => {
       // Firestore has no case-insensitive "contains" search, so location
       // matching happens client-side here. Fine for a few hundred listings;
       // swap in Algolia/Typesense once the catalog grows large.
       const docs = snapshot.docs.filter((doc) => {
         const p = doc.data();
         if ((p.availability || "available") === "booked") return false;
-        if (location && !(p.location || "").toLowerCase().includes(location)) return false;
-        if (type && p.type !== type) return false;
+
+        // Location: check both location and county fields, case-insensitive.
+        if (location) {
+          const loc = (p.location || "").toLowerCase();
+          const county = (p.county || "").toLowerCase();
+          if (!loc.includes(location) && !county.includes(location)) return false;
+        }
+
+        // Type: case/whitespace-insensitive exact match.
+        if (type && (p.type || "").trim().toLowerCase() !== type) return false;
+
         if (maxPrice !== null && Number(p.price || 0) > maxPrice) return false;
         return true;
       });
@@ -47,8 +58,7 @@ function loadResults() {
       }
       resultsGrid.innerHTML = docs.map((doc) => propertyCardHTML(doc.id, doc.data())).join("");
       attachHeartHandlers(resultsGrid);
-    })
-    .catch((err) => {
+    }, (err) => {
       console.error(err);
       resultsGrid.innerHTML = `<p class="empty-state">Couldn't load properties right now.</p>`;
     });
