@@ -3,12 +3,13 @@
 function propertyCardHTML(id, p) {
   const cover = (p.imageUrls && p.imageUrls.length) ? p.imageUrls[0] : "img/placeholder-property.jpg";
   const price = Number(p.price || 0).toLocaleString("en-KE");
+  const saved = typeof isPropertySaved === "function" && isPropertySaved(id);
   return `
     <div class="property-card">
       <div class="property-image">
         <img src="${cover}" alt="${escapeHTML(p.title || "")}">
         <span class="badge">${escapeHTML(p.listingType || "For Rent")}</span>
-        <span class="heart">&#9825;</span>
+        <span class="heart ${saved ? "active" : ""}" data-id="${id}">${saved ? "&#9829;" : "&#9825;"}</span>
       </div>
       <div class="property-body">
         <h3>${escapeHTML(p.title || "")}</h3>
