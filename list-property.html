@@ -1,101 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>List Your Property - HomeLink Kenya</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+renderNavbar("list");
+renderFooter();
 
-<div id="navbar-root"></div>
+const form = document.getElementById("listing-form");
+const submitBtn = document.getElementById("submit-btn");
+const errorBox = document.getElementById("form-error");
+const successBox = document.getElementById("form-success");
+const signedOutNotice = document.getElementById("signed-out-notice");
 
-<section class="form-page">
-  <h1>List Your Property</h1>
-  <p class="form-subtitle">Reach thousands of renters across Kenya. It only takes a few minutes.</p>
+let currentUser = null;
+auth.onAuthStateChanged((user) => {
+  currentUser = user;
+  signedOutNotice.style.display = user ? "none" : "block";
+  submitBtn.disabled = !user;
+});
 
-  <p class="alert alert-error" id="signed-out-notice" style="display:none;">
-    You need to <a href="login.html">log in</a> before listing a property.
-  </p>
-  <p class="alert alert-error" id="form-error" style="display:none;"></p>
-  <p class="alert alert-success" id="form-success" style="display:none;"></p>
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.style.display = "none";
+  successBox.style.display = "none";
 
-  <form class="listing-form" id="listing-form">
-    <div class="form-row">
-      <label>Title
-        <input type="text" name="title" placeholder="e.g. 2 Bedroom Apartment" required>
-      </label>
-      <label>Listing Type
-        <select name="listingType">
-          <option>For Rent</option>
-          <option>For Sale</option>
-        </select>
-      </label>
-    </div>
+  if (!currentUser) {
+    errorBox.textContent = "Please log in first.";
+    errorBox.style.display = "block";
+    return;
+  }
 
-    <div class="form-row">
-      <label>Property Type
-        <select name="type">
-          <option>Apartment</option>
-          <option>Bedsitter</option>
-          <option>House</option>
-          <option>Studio</option>
-        </select>
-      </label>
-      <label>Price (KSh / month)
-        <input type="number" name="price" min="0" placeholder="25000" required>
-      </label>
-    </div>
+  const data = new FormData(form);
+  const photos = document.getElementById("photos-input").files;
 
-    <div class="form-row">
-      <label>Location
-        <input type="text" name="location" placeholder="e.g. Kilimani, Nairobi" required>
-      </label>
-      <label>County
-        <input type="text" name="county" placeholder="e.g. Nairobi" required>
-      </label>
-    </div>
+  submitBtn.disabled = true;
+  submitBtn.textContent = photos.length ? "Uploading photos..." : "Publishing...";
 
-    <div class="form-row form-row-3">
-      <label>Bedrooms <input type="number" name="bedrooms" min="0" value="1"></label>
-      <label>Bathrooms <input type="number" name="bathrooms" min="0" value="1"></label>
-      <label>Parking <input type="number" name="parking" min="0" value="0"></label>
-    </div>
+  try {
+    const imageUrls = photos.length ? await uploadAllToCloudinary(photos) : [];
 
-    <div class="form-row">
-      <label>Your Name / Business Name
-        <input type="text" name="ownerName" placeholder="e.g. Jane Wanjiru or Grand Ventures Properties" required>
-      </label>
-      <label>Your contact (phone or email, shown to renters)
-        <input type="text" name="ownerContact" placeholder="e.g. 07XX XXX XXX" required>
-      </label>
-    </div>
+    submitBtn.textContent = "Publishing...";
 
-    <label class="full-width">Description
-      <textarea name="description" rows="4" placeholder="Describe the property..."></textarea>
-    </label>
+    const docRef = await db.collection("propertiess").add({
+      title: data.get("title"),
+      listingType: data.get("listingType"),
+      type: data.get("type"),
+      price: Number(data.get("price")),
+      location: data.get("location"),
+      county: data.get("county"),
+      bedrooms: Number(data.get("bedrooms")) || 0,
+      bathrooms: Number(data.get("bathrooms")) || 0,
+      parking: Number(data.get("parking")) || 0,
+      description: data.get("description"),
+      ownerName: data.get("ownerName"),
+      ownerContact: data.get("ownerContact"),
+      imageUrls: imageUrls,
+      ownerId: currentUser.uid,
+      featured: false,
+      status: "pending",
+      views: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-    <label class="full-width">Photos
-      <input type="file" name="photos" id="photos-input" accept="image/*" multiple>
-      <small>Uploaded to Cloudinary automatically when you submit.</small>
-    </label>
-
-    <button type="submit" class="btn-primary btn-large" id="submit-btn">Publish Listing</button>
-  </form>
-</section>
-
-<div id="footer-root"></div>
-
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-
-<script src="firebase-config.js"></script>
-<script src="nav.js"></script>
-<script src="footer.js"></script>
-<script src="property-card.js"></script>
-<script src="cloudinary.js"></script>
-<script src="list-property.js"></script>
-
-</body>
-</html>
+    successBox.textContent = "Thanks! Your listing has been submitted and will go live once our team reviews and approves it.";
+    successBox.style.display = "block";
+    form.reset();
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Publish Listing";
+  } catch (err) {
+    console.error(err);
+    errorBox.textContent = "Couldn't publish your listing: " + err.message;
+    errorBox.style.display = "block";
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Publish Listing";
+  }
+});
