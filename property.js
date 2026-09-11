@@ -1,3 +1,4 @@
+
 renderNavbar(null);
 renderFooter();
 
@@ -42,7 +43,9 @@ if (!id) {
 
     const photos = (p.imageUrls && p.imageUrls.length) ? p.imageUrls : ["img/placeholder-property.jpg"];
     const thumbs = photos.length > 1
-      ? `<div class="gallery-thumbs">${photos.map((u) => `<img src="${u}" alt="">`).join("")}</div>`
+      ? `<div class="gallery-thumbs">${photos.map((u, i) =>
+          `<img src="${u}" alt="" data-index="${i}" class="${i === 0 ? "active" : ""}">`
+        ).join("")}</div>`
       : "";
     const price = Number(p.price || 0).toLocaleString("en-KE");
 
@@ -63,7 +66,7 @@ if (!id) {
 
     detailRoot.innerHTML = `
       <div class="detail-gallery">
-        <img src="${photos[0]}" alt="${escapeHTML(p.title || "")}">
+        <img src="${photos[0]}" alt="${escapeHTML(p.title || "")}" id="main-photo">
         ${thumbs}
       </div>
       <div class="detail-info">
@@ -107,6 +110,16 @@ if (!id) {
           <span class="report-link" id="report-link">&#9873; Report this listing</span>
         </div>
       </div>`;
+
+    // Gallery: clicking a thumbnail swaps the main photo
+    const mainPhoto = document.getElementById("main-photo");
+    detailRoot.querySelectorAll(".gallery-thumbs img").forEach((thumb) => {
+      thumb.addEventListener("click", () => {
+        mainPhoto.src = photos[Number(thumb.dataset.index)];
+        detailRoot.querySelectorAll(".gallery-thumbs img").forEach((t) => t.classList.remove("active"));
+        thumb.classList.add("active");
+      });
+    });
 
     // Save button
     const saveBtn = document.getElementById("save-btn");
