@@ -5,15 +5,17 @@ const featuredGrid = document.getElementById("featured-grid");
 
 db.collection("propertiess")
   .where("status", "==", "approved")
-  .where("featured", "==", true)
   .orderBy("createdAt", "desc")
-  .limit(12)
   .get()
   .then((snapshot) => {
-    // Filter out booked units client-side (avoids needing yet another
-    // composite index) and cap to 4 for the homepage grid.
+    // Featured + booked filtering happens client-side here (same pattern as
+    // properties.js) so both pages share one query shape and only need a
+    // single composite index: status + createdAt.
     const docs = snapshot.docs
-      .filter((doc) => (doc.data().availability || "available") !== "booked")
+      .filter((doc) => {
+        const p = doc.data();
+        return p.featured === true && (p.availability || "available") !== "booked";
+      })
       .slice(0, 4);
 
     if (docs.length === 0) {
