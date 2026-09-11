@@ -24,7 +24,7 @@ function loadResults() {
   const type = params.get("type") || "";
   const maxPrice = params.get("maxPrice") ? Number(params.get("maxPrice")) : null;
 
-  db.collection("propertiesss")
+  db.collection("propertiess")
     .where("status", "==", "approved")
     .orderBy("createdAt", "desc")
     .get()
