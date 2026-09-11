@@ -44,6 +44,7 @@ function loadResults() {
         return;
       }
       resultsGrid.innerHTML = docs.map((doc) => propertyCardHTML(doc.id, doc.data())).join("");
+      attachHeartHandlers(resultsGrid);
     })
     .catch((err) => {
       console.error(err);
