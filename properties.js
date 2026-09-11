@@ -25,10 +25,8 @@ function loadResults() {
   const maxPrice = params.get("maxPrice") ? Number(params.get("maxPrice")) : null;
 
   db.collection("propertiess")
-  .where("status", "==", "approved")
-  .where("featured", "==", true)
-  .orderBy("createdAt", "desc")
-  .limit(4)
+    .where("status", "==", "approved")
+    .orderBy("createdAt", "desc")
     .get()
     .then((snapshot) => {
       // Firestore has no case-insensitive "contains" search, so location
