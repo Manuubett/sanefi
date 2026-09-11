@@ -19,7 +19,7 @@ function renderNavbar(activePage) {
             <span class="brand-tagline">Real Estate | Property Management | Movers | Cleaners | BnB</span>
           </span>
         </a>
-        <nav class="nav-links">
+        <nav class="nav-links" id="nav-links">
           <a href="index.html" class="${isActive('home')}">Home</a>
           <a href="properties.html" class="${isActive('browse')}">Browse Properties</a>
           <a href="list-property.html" class="${isActive('list')}">List Property</a>
@@ -30,8 +30,19 @@ function renderNavbar(activePage) {
           <a href="saved.html" class="nav-action">&#9825; Saved</a>
           <a href="login.html" class="nav-action">&#128100; Login / Sign Up</a>
         </div>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </header>`;
+
+  const toggle = document.getElementById("nav-toggle");
+  const links = document.getElementById("nav-links");
+  toggle.addEventListener("click", () => {
+    const isOpen = links.classList.toggle("open");
+    toggle.classList.toggle("open", isOpen);
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  });
 
   // Swap the login link for a "log out" once we know who's signed in.
   auth.onAuthStateChanged((user) => {
