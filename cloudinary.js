@@ -1,3 +1,10 @@
+// ---------------------------------------------------------------------
+// CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET are already defined
+// in firebase-config.js (loaded before this file on every page) — don't
+// redeclare them here, or the page will throw a
+// "Identifier has already been declared" error.
+// ---------------------------------------------------------------------
+
 // Uploads a single File straight from the browser to Cloudinary using an
 // unsigned upload preset (Settings -> Upload -> Upload presets in your
 // Cloudinary dashboard). Returns the hosted photo's secure URL.
