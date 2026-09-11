@@ -3,11 +3,14 @@ renderFooter();
 
 const featuredGrid = document.getElementById("featured-grid");
 
+// onSnapshot instead of get(): Firestore serves the local cache instantly
+// (fast repeat loads, works offline), then keeps this listener open so
+// newly approved/featured listings appear automatically — no manual
+// refresh or polling needed.
 db.collection("propertiess")
   .where("status", "==", "approved")
   .orderBy("createdAt", "desc")
-  .get()
-  .then((snapshot) => {
+  .onSnapshot((snapshot) => {
     // Featured + booked filtering happens client-side here (same pattern as
     // properties.js) so both pages share one query shape and only need a
     // single composite index: status + createdAt.
@@ -26,8 +29,7 @@ db.collection("propertiess")
       .map((doc) => propertyCardHTML(doc.id, doc.data()))
       .join("");
     attachHeartHandlers(featuredGrid);
-  })
-  .catch((err) => {
+  }, (err) => {
     console.error(err);
     const hint = err.code === "failed-precondition"
       ? " (Firestore needs an index for this query — check the browser console for a link to create it.)"
