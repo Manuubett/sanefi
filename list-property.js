@@ -53,7 +53,9 @@ form.addEventListener("submit", async (e) => {
       ownerId: currentUser.uid,
       featured: false,
       status: "pending",
+      availability: "available",
       views: 0,
+      savesCount: 0,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
