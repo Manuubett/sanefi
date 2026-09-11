@@ -47,10 +47,12 @@ form.addEventListener("submit", async (e) => {
       bathrooms: Number(data.get("bathrooms")) || 0,
       parking: Number(data.get("parking")) || 0,
       description: data.get("description"),
+      ownerName: data.get("ownerName"),
       ownerContact: data.get("ownerContact"),
       imageUrls: imageUrls,
       ownerId: currentUser.uid,
       featured: false,
+      views: 0,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
