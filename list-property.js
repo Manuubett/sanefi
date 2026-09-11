@@ -52,11 +52,16 @@ form.addEventListener("submit", async (e) => {
       imageUrls: imageUrls,
       ownerId: currentUser.uid,
       featured: false,
+      status: "pending",
       views: 0,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    window.location.href = `property.html?id=${docRef.id}`;
+    successBox.textContent = "Thanks! Your listing has been submitted and will go live once our team reviews and approves it.";
+    successBox.style.display = "block";
+    form.reset();
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Publish Listing";
   } catch (err) {
     console.error(err);
     errorBox.textContent = "Couldn't publish your listing: " + err.message;
