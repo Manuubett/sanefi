@@ -7,14 +7,20 @@ db.collection("propertiess")
   .where("status", "==", "approved")
   .where("featured", "==", true)
   .orderBy("createdAt", "desc")
-  .limit(4)
+  .limit(12)
   .get()
   .then((snapshot) => {
-    if (snapshot.empty) {
+    // Filter out booked units client-side (avoids needing yet another
+    // composite index) and cap to 4 for the homepage grid.
+    const docs = snapshot.docs
+      .filter((doc) => (doc.data().availability || "available") !== "booked")
+      .slice(0, 4);
+
+    if (docs.length === 0) {
       featuredGrid.innerHTML = `<p class="empty-state">No featured listings yet &mdash; be the first to <a href="list-property.html">list a property</a>.</p>`;
       return;
     }
-    featuredGrid.innerHTML = snapshot.docs
+    featuredGrid.innerHTML = docs
       .map((doc) => propertyCardHTML(doc.id, doc.data()))
       .join("");
     attachHeartHandlers(featuredGrid);
