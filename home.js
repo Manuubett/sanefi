@@ -16,6 +16,7 @@ db.collection("propertiess")
     featuredGrid.innerHTML = snapshot.docs
       .map((doc) => propertyCardHTML(doc.id, doc.data()))
       .join("");
+    attachHeartHandlers(featuredGrid);
   })
   .catch((err) => {
     console.error(err);
