@@ -136,7 +136,18 @@ img { max-width: 100%; display: block; }
 .admin-row-info span { font-size: 13px; color: var(--ink-soft); }
 .admin-row-status { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); padding: 4px 10px; border-radius: 6px; background: var(--bg); white-space: nowrap; }
 .admin-row-status.is-featured { color: var(--green); background: #e8f7ee; }
+.admin-row-status.status-pending { color: #a9760a; background: #fdf3e0; }
+.admin-row-status.status-approved { color: var(--green); background: #e8f7ee; }
+.admin-row-status.status-rejected { color: #b42323; background: #fdeaea; }
 .admin-toggle-btn { width: auto; padding: 8px 18px; white-space: nowrap; }
+.admin-poster { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+.admin-row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.admin-action-btn { width: auto; padding: 8px 18px; white-space: nowrap; }
+.admin-delete-btn { background: none; border: 1.5px solid #f0c4c4; color: #b42323; border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.admin-delete-btn:hover { background: #fdeaea; }
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.admin-tab { background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+.admin-tab.active { background: var(--pink); border-color: var(--pink); color: #fff; }
 
 /* ---------- Perks strip ---------- */
 .perks {
