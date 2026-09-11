@@ -4,6 +4,7 @@ renderFooter();
 const featuredGrid = document.getElementById("featured-grid");
 
 db.collection("propertiess")
+  .where("status", "==", "approved")
   .where("featured", "==", true)
   .orderBy("createdAt", "desc")
   .limit(4)
