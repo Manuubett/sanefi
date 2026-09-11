@@ -34,6 +34,7 @@ function loadResults() {
       // swap in Algolia/Typesense once the catalog grows large.
       const docs = snapshot.docs.filter((doc) => {
         const p = doc.data();
+        if ((p.availability || "available") === "booked") return false;
         if (location && !(p.location || "").toLowerCase().includes(location)) return false;
         if (type && p.type !== type) return false;
         if (maxPrice !== null && Number(p.price || 0) > maxPrice) return false;
