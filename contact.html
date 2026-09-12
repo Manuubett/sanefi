@@ -3,21 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contact - HomeLink Kenya</title>
-<link rel="stylesheet" href="css/style.css">
+<title>Contact - Sanefi Consult</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="navbar-root"></div>
+
 <section class="page-header">
-  <h1>Contact</h1>
-  <p class="form-subtitle">This page is a stub — build it out to fit your content.</p>
+  <h1>Contact Us</h1>
+  <p class="form-subtitle">Have a question about a listing, or want to work with us? Reach out any of these ways.</p>
 </section>
+
+<section class="detail" style="grid-template-columns: 1fr 1fr;">
+  <div class="agent-card" style="margin-top:0;">
+    <div class="agent-card-top">
+      <div class="agent-avatar">SC</div>
+      <div>
+        <div class="agent-name">Sanefi Consult</div>
+        <div class="agent-role">Real Estate | Property Management | Movers | Cleaners | BnB</div>
+      </div>
+    </div>
+    <p class="agent-contact-line">&#128222; <a href="tel:0724006117">0724 006 117</a></p>
+    <p class="agent-contact-line">&#128222; <a href="tel:0737495356">0737 495 356</a></p>
+    <p class="agent-contact-line">&#9993; <a href="mailto:saneficonsult@gmail.com">saneficonsult@gmail.com</a></p>
+    <p class="agent-contact-line">&#128205; Eunice Nyaga Plaza, 3rd Floor, Room 1 &mdash; next to Equity Bank</p>
+    <div class="social-icons" style="margin-top:14px;">
+      <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook">FB</a>
+      <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">IG</a>
+    </div>
+  </div>
+
+  <div>
+    <h3 style="margin-top:0;">Send us a message</h3>
+    <form class="listing-form" id="contact-form">
+      <label>Your Name
+        <input type="text" name="name" placeholder="Your full name" required>
+      </label>
+      <label>Your Contact (phone or email)
+        <input type="text" name="contact" placeholder="07XX XXX XXX or you@email.com" required>
+      </label>
+      <label>Message
+        <textarea name="message" rows="5" placeholder="How can we help?" required></textarea>
+      </label>
+      <button type="submit" class="btn-primary btn-large">Send via WhatsApp</button>
+      <p class="alert alert-success" id="contact-success" style="display:none;">Opening WhatsApp&hellip;</p>
+    </form>
+  </div>
+</section>
+
 <div id="footer-root"></div>
+
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js"></script>
-<script src="js/nav.js"></script>
-<script>renderNavbar(null); renderFooter();</script>
+<script src="firebase-config.js"></script>
+<script src="nav.js"></script>
+<script src="footer.js"></script>
+<script>
+renderNavbar("contact");
+renderFooter();
+
+document.getElementById("contact-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const data = new FormData(e.target);
+  const text = `Hello Sanefi Consult, my name is ${data.get("name")} (${data.get("contact")}).\n\n${data.get("message")}`;
+  document.getElementById("contact-success").style.display = "block";
+  window.open(`https://wa.me/254724006117?text=${encodeURIComponent(text)}`, "_blank");
+});
+</script>
 </body>
 </html>
