@@ -44,8 +44,17 @@ function renderFooter() {
           </form>
         </div>
       </div>
+      <div class="dev-credit">
+        <img src="deh-logo.png" alt="Deh Emanuel's Solutions" class="dev-credit-logo" onerror="this.style.display='none'">
+        <div class="dev-credit-text">
+          <span class="dev-credit-label">Website designed &amp; maintained by</span>
+          <a href="https://deh-emanuels-solutions.bett.website/" target="_blank" rel="noopener" class="dev-credit-name">Deh Emanuel's Solutions</a>
+          <span class="dev-credit-tagline">Smart Systems. Better Schools. Stronger Businesses.</span>
+        </div>
+        <a href="https://deh-emanuels-solutions.bett.website/" target="_blank" rel="noopener" class="dev-credit-btn">Visit Website &rarr;</a>
+      </div>
       <div class="footer-bottom">
-        <span>&copy; ${year} Sanefi Consult. All rights reserved. &middot; Designed and maintained by <a href="https://deh-emanuels-solutions.bett.website/" target="_blank" rel="noopener" class="powered-by-link"><img src="deh logo.png" alt="Deh Emanuel's Solutions" class="powered-by-logo"> Deh Emanuel's Solutions</a>, a software company</span>
+        <span>&copy; ${year} Sanefi Consult. All rights reserved.</span>
         <div class="footer-legal">
           <a href="#">Privacy Policy</a>
           <a href="#">Terms of Service</a>
