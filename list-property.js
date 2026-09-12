@@ -1,158 +1,63 @@
-renderNavbar(null);
-renderFooter();
-
-const detailRoot = document.getElementById("detail-root");
-const id = new URLSearchParams(window.location.search).get("id");
-
-function formatDate(timestamp) {
-  if (!timestamp || typeof timestamp.toDate !== "function") return "Recently";
-  return timestamp.toDate().toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function isPhoneNumber(str) {
-  return /^[+0-9\s-]{7,}$/.test((str || "").trim());
-}
-
-function toWhatsAppNumber(raw) {
-  let digits = (raw || "").replace(/[^\d]/g, "");
-  if (digits.startsWith("0")) digits = "254" + digits.slice(1);
-  else if (digits.startsWith("7") && digits.length === 9) digits = "254" + digits;
-  return digits;
-}
-
-function initials(name) {
-  return (name || "P O")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() || "")
-    .join("");
-}
-
-if (!id) {
-  detailRoot.innerHTML = `<p class="empty-state">No property specified. <a href="properties.html">Browse all properties</a>.</p>`;
-} else {
-  db.collection("propertiess").doc(id).get().then((doc) => {
-    if (!doc.exists) {
-      detailRoot.innerHTML = `<p class="empty-state">That listing wasn't found. <a href="properties.html">Browse all properties</a>.</p>`;
-      return;
-    }
-    const p = doc.data();
-    document.getElementById("page-title").textContent = `${p.title} - Sanefi Consult`;
-
-    const photos = (p.imageUrls && p.imageUrls.length) ? p.imageUrls : ["img/placeholder-property.jpg"];
-    const thumbs = photos.length > 1
-      ? `<div class="gallery-thumbs">${photos.map((u) => `<img src="${u}" alt="">`).join("")}</div>`
-      : "";
-    const price = Number(p.price || 0).toLocaleString("en-KE");
-
-    const contact = p.ownerContact || "";
-    const refId = "#" + id.slice(-6).toUpperCase();
-    const postedDate = formatDate(p.createdAt);
-    const viewCount = Number(p.views || 0);
-    const saved = typeof isPropertySaved === "function" && isPropertySaved(id);
-    const ownerName = p.ownerName || "Property Owner";
-
-    const callWhatsAppButtons = isPhoneNumber(contact)
-      ? `
-        <a href="tel:${contact.replace(/\s/g, "")}" class="action-btn btn-call">&#128222; Call</a>
-        <a href="https://wa.me/${toWhatsAppNumber(contact)}" target="_blank" rel="noopener" class="action-btn btn-whatsapp">&#128172; WhatsApp</a>`
-      : (contact
-          ? `<a href="mailto:${contact}" class="action-btn btn-call">&#9993; Email Owner</a>`
-          : "");
-
-    detailRoot.innerHTML = `
-      <div class="detail-gallery">
-        <img src="${photos[0]}" alt="${escapeHTML(p.title || "")}">
-        ${thumbs}
-      </div>
-      <div class="detail-info">
-        <span class="badge">${escapeHTML(p.listingType || "For Rent")}</span>
-        <h1>${escapeHTML(p.title || "")}</h1>
-        <p class="location">&#128205; ${escapeHTML(p.location || "")}</p>
-        <p class="price">KSh ${price} / month</p>
-
-        <div class="detail-actions">
-          ${callWhatsAppButtons}
-          <button class="action-btn btn-outline ${saved ? "is-saved" : ""}" id="save-btn">
-            <span id="save-icon">${saved ? "&#9829;" : "&#9825;"}</span> <span id="save-label">${saved ? "Saved" : "Save"}</span>
-          </button>
-          <button class="action-btn btn-outline" id="share-btn">&#128257; Share</button>
-        </div>
-
-        <div class="detail-meta">
-          <span>&#128295; Ref ${refId}</span>
-          <span>&#128197; Posted ${postedDate}</span>
-          <span>&#128065; <span id="view-count">${viewCount}</span> views</span>
-        </div>
-
-        <div class="property-stats detail-stats">
-          <span>&#128716; ${p.bedrooms ?? 0} Beds</span>
-          <span>&#128703; ${p.bathrooms ?? 0} Baths</span>
-          <span>&#128663; ${p.parking ?? 0} Parking</span>
-        </div>
-        <h3>Description</h3>
-        <p>${escapeHTML(p.description || "No description provided.")}</p>
-
-        <div class="agent-card">
-          <div class="agent-card-top">
-            <div class="agent-avatar">${initials(ownerName)}</div>
-            <div>
-              <div class="agent-name">${escapeHTML(ownerName)}</div>
-              <div class="agent-role">Marketed by</div>
-            </div>
+function renderFooter() {
+  const year = new Date().getFullYear();
+  document.getElementById("footer-root").innerHTML = `
+    <footer class="site-footer">
+      <div class="footer-main">
+        <div class="footer-col">
+          <h4>Sanefi Consult</h4>
+          <p class="footer-note">Helping you find rental houses, apartments and bedsitters from trusted landlords and agents across Kenya.</p>
+          <div class="social-icons">
+            <a href="#" aria-label="Facebook">FB</a>
+            <a href="#" aria-label="Instagram">IG</a>
+            <a href="#" aria-label="X / Twitter">X</a>
+            <a href="#" aria-label="WhatsApp">WA</a>
           </div>
-          <p class="agent-contact-line">&#128222; ${escapeHTML(contact || "Not provided")}</p>
-          <p class="agent-contact-line">&#128205; ${escapeHTML(p.county || p.location || "")}</p>
-          <span class="report-link" id="report-link">&#9873; Report this listing</span>
         </div>
-      </div>`;
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <a href="index.html">Home</a>
+          <a href="properties.html">Browse Properties</a>
+          <a href="list-property.html">List Property</a>
+          <a href="about.html">About Us</a>
+          <a href="contact.html">Contact</a>
+        </div>
+        <div class="footer-col">
+          <h4>Services</h4>
+          <a href="properties.html?type=Apartment">Apartments</a>
+          <a href="properties.html?type=House">Houses</a>
+          <a href="properties.html?type=Bedsitter">Bedsitters</a>
+          <a href="contact.html">Property Management</a>
+          <a href="contact.html">Movers &amp; Cleaners</a>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <a href="contact.html">Contact Us</a>
+          <a href="login.html">Login / Sign Up</a>
+          <a href="saved.html">Saved Properties</a>
+        </div>
+        <div class="footer-col">
+          <h4>Stay Updated</h4>
+          <p class="footer-note">Get new listings and offers straight to your inbox.</p>
+          <form class="subscribe-form" id="footer-subscribe-form">
+            <input type="email" placeholder="Your email address" required>
+            <button type="submit">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; ${year} Sanefi Consult. All rights reserved. &middot; Powered by <a href="https://deh-emanuels-solutions.bett.website/" target="_blank" rel="noopener">Deh Emanuel's Solutions</a></span>
+        <div class="footer-legal">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </footer>`;
 
-    // Save button
-    const saveBtn = document.getElementById("save-btn");
-    saveBtn.addEventListener("click", () => {
-      const nowSaved = toggleSavedProperty(id);
-      saveBtn.classList.toggle("is-saved", nowSaved);
-      document.getElementById("save-icon").innerHTML = nowSaved ? "&#9829;" : "&#9825;";
-      document.getElementById("save-label").textContent = nowSaved ? "Saved" : "Save";
+  const subscribeForm = document.getElementById("footer-subscribe-form");
+  if (subscribeForm) {
+    subscribeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      subscribeForm.innerHTML = `<span style="color:#fff;font-size:13px;">Thanks for subscribing!</span>`;
     });
-
-    // Share button
-    document.getElementById("share-btn").addEventListener("click", async () => {
-      const shareData = { title: p.title, text: `Check out this listing on Sanefi Consult`, url: window.location.href };
-      if (navigator.share) {
-        try { await navigator.share(shareData); } catch { /* user cancelled */ }
-      } else {
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          const btn = document.getElementById("share-btn");
-          const original = btn.innerHTML;
-          btn.innerHTML = "&#10003; Link copied!";
-          setTimeout(() => (btn.innerHTML = original), 2000);
-        } catch {
-          alert(window.location.href);
-        }
-      }
-    });
-
-    // Report link
-    document.getElementById("report-link").addEventListener("click", () => {
-      window.location.href = `mailto:support@sanefconsult.com?subject=Reporting listing ${refId}&body=Please describe the issue with this listing: ${window.location.href}`;
-    });
-
-    // View count: only increment once per browser session per listing.
-    const viewedKey = `viewed_${id}`;
-    if (!sessionStorage.getItem(viewedKey)) {
-      sessionStorage.setItem(viewedKey, "1");
-      db.collection("propertiess").doc(id).update({
-        views: firebase.firestore.FieldValue.increment(1)
-      }).then(() => {
-        const el = document.getElementById("view-count");
-        if (el) el.textContent = viewCount + 1;
-      }).catch((err) => console.error("Couldn't update view count:", err));
-    }
-  }).catch((err) => {
-    console.error(err);
-    detailRoot.innerHTML = `<p class="empty-state">Couldn't load this property right now.</p>`;
-  });
+  }
 }
