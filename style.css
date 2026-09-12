@@ -263,6 +263,8 @@ img { max-width: 100%; display: block; }
 .footer-bottom { border-top: 1px solid #1c3557; padding: 18px 32px; max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; font-size: 12.5px; color: #8fa0b8; }
 .footer-bottom a { text-decoration: underline; }
 .footer-bottom a:hover { color: #fff; }
+.powered-by-link { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; }
+.powered-by-logo { display: inline-block; height: 16px; width: auto; vertical-align: middle; }
 .footer-legal { display: flex; gap: 18px; }
 
 /* ---------- Responsive ---------- */
