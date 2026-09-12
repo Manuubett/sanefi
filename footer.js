@@ -45,7 +45,7 @@ function renderFooter() {
         </div>
       </div>
       <div class="footer-bottom">
-        <span>&copy; ${year} Sanefi Consult. All rights reserved.</span>
+        <span>&copy; ${year} Sanefi Consult. All rights reserved. &middot; Powered by <a href="https://deh-emanuels-solutions.bett.website/" target="_blank" rel="noopener">Deh Emanuel's Solutions</a></span>
         <div class="footer-legal">
           <a href="#">Privacy Policy</a>
           <a href="#">Terms of Service</a>
