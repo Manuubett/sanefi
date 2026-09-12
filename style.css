@@ -263,8 +263,28 @@ img { max-width: 100%; display: block; }
 .footer-bottom { border-top: 1px solid #1c3557; padding: 18px 32px; max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; font-size: 12.5px; color: #8fa0b8; }
 .footer-bottom a { text-decoration: underline; }
 .footer-bottom a:hover { color: #fff; }
-.powered-by-link { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; }
-.powered-by-logo { display: inline-block; height: 16px; width: auto; vertical-align: middle; }
+
+/* ---------- Developer credit ---------- */
+.dev-credit {
+    max-width: 1280px; margin: 0 auto; padding: 22px 32px;
+    border-top: 1px solid #1c3557;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+}
+.dev-credit-logo { height: 42px; width: auto; border-radius: 8px; background: #fff; padding: 5px; flex-shrink: 0; }
+.dev-credit-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 220px; }
+.dev-credit-label { font-size: 11.5px; color: #8fa0b8; }
+.dev-credit-name { font-size: 15.5px; font-weight: 700; color: #fff; }
+.dev-credit-name:hover { color: var(--pink); }
+.dev-credit-tagline { font-size: 11.5px; color: #8fa0b8; font-style: italic; }
+.dev-credit-btn {
+    background: var(--pink); color: #fff; font-size: 13px; font-weight: 600;
+    padding: 10px 20px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+}
+.dev-credit-btn:hover { background: var(--pink-dark); }
+@media (max-width: 640px) {
+    .dev-credit { justify-content: center; text-align: center; }
+    .dev-credit-text { text-align: center; align-items: center; }
+}
 .footer-legal { display: flex; gap: 18px; }
 
 /* ---------- Responsive ---------- */
