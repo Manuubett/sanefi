@@ -3,21 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About Us - HomeLink Kenya</title>
-<link rel="stylesheet" href="css/style.css">
+<title>About Us - Sanefi Consult</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="navbar-root"></div>
+
 <section class="page-header">
-  <h1>About Us</h1>
-  <p class="form-subtitle">This page is a stub — build it out to fit your content.</p>
+  <h1>About Sanefi Consult</h1>
+  <p class="form-subtitle">Real Estate | Property Management | Movers | Cleaners | BnB</p>
 </section>
+
+<section class="featured" style="max-width: 900px;">
+  <p>Sanefi Consult connects renters and buyers across Kenya with verified rental houses, apartments and bedsitters from trusted landlords and agents. Beyond listings, we offer full property management, moving services, cleaning, and short-term BnB stays &mdash; everything you need to find, move into, and maintain a home, all under one roof.</p>
+
+  <div class="perks" style="margin: 40px 0; border-radius: var(--radius);">
+    <div class="perk"><span class="perk-icon">&#8962;</span><h4>Real Estate</h4><p>Find rental houses, apartments and bedsitters across Kenya.</p></div>
+    <div class="perk"><span class="perk-icon">&#128737;</span><h4>Property Management</h4><p>Full management services for landlords and property owners.</p></div>
+    <div class="perk"><span class="perk-icon">&#128666;</span><h4>Movers</h4><p>Reliable moving services to get you settled quickly.</p></div>
+    <div class="perk"><span class="perk-icon">&#129529;</span><h4>Cleaners</h4><p>Professional cleaning for move-ins, move-outs, and beyond.</p></div>
+    <div class="perk"><span class="perk-icon">&#128717;</span><h4>BnB</h4><p>Comfortable short-term stays for travellers and visitors.</p></div>
+  </div>
+
+  <h3>Visit Us</h3>
+  <p class="location">&#128205; Eunice Nyaga Plaza, 3rd Floor, Room 1 &mdash; next to Equity Bank</p>
+
+  <h3>Get in Touch</h3>
+  <p>&#128222; 0724 006 117 &nbsp;|&nbsp; 0737 495 356</p>
+  <p>&#9993; <a href="mailto:saneficonsult@gmail.com">saneficonsult@gmail.com</a></p>
+  <p>Follow us on Facebook and Instagram: <strong>Sanefi Consult</strong></p>
+
+  <a href="contact.html" class="btn-primary btn-large" style="max-width:240px; margin-top: 16px;">Contact Us</a>
+</section>
+
 <div id="footer-root"></div>
+
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js"></script>
-<script src="js/nav.js"></script>
-<script>renderNavbar(null); renderFooter();</script>
+<script src="firebase-config.js"></script>
+<script src="nav.js"></script>
+<script src="footer.js"></script>
+<script>renderNavbar("about"); renderFooter();</script>
 </body>
 </html>
