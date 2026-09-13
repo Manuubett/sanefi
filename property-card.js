@@ -4,6 +4,17 @@ function propertyCardHTML(id, p) {
   const cover = (p.imageUrls && p.imageUrls.length) ? p.imageUrls[0] : "img/placeholder-property.jpg";
   const price = Number(p.price || 0).toLocaleString("en-KE");
   const saved = typeof isPropertySaved === "function" && isPropertySaved(id);
+  const isLand = p.type === "Land";
+
+  const statsHTML = isLand
+    ? `
+        <span>&#128207; ${p.landSize || "?"} ${escapeHTML(p.landSizeUnit || "")}</span>
+        <span>${p.titleDeedVerified ? "&#9989; Verified Title" : "&#9888; Unverified"}</span>`
+    : `
+        <span>&#128716; ${p.bedrooms ?? 0} Beds</span>
+        <span>&#128703; ${p.bathrooms ?? 0} Baths</span>
+        <span>&#128663; ${p.parking ?? 0} Parking</span>`;
+
   return `
     <div class="property-card">
       <div class="property-image">
@@ -13,12 +24,10 @@ function propertyCardHTML(id, p) {
       </div>
       <div class="property-body">
         <h3>${escapeHTML(p.title || "")}</h3>
-        <p class="price">KSh ${price} / month</p>
+        <p class="price">KSh ${price}${isLand ? "" : " / month"}</p>
         <p class="location">&#128205; ${escapeHTML(p.location || "")}</p>
         <div class="property-stats">
-          <span>&#128716; ${p.bedrooms ?? 0} Beds</span>
-          <span>&#128703; ${p.bathrooms ?? 0} Baths</span>
-          <span>&#128663; ${p.parking ?? 0} Parking</span>
+          ${statsHTML}
         </div>
         <a href="property.html?id=${id}" class="btn-primary">View Details</a>
       </div>
