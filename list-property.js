@@ -1,63 +1,83 @@
-function renderFooter() {
-  const year = new Date().getFullYear();
-  document.getElementById("footer-root").innerHTML = `
-    <footer class="site-footer">
-      <div class="footer-main">
-        <div class="footer-col">
-          <h4>Sanefi Consult</h4>
-          <p class="footer-note">Helping you find rental houses, apartments and bedsitters from trusted landlords and agents across Kenya.</p>
-          <div class="social-icons">
-            <a href="#" aria-label="Facebook">FB</a>
-            <a href="#" aria-label="Instagram">IG</a>
-            <a href="#" aria-label="X / Twitter">X</a>
-            <a href="#" aria-label="WhatsApp">WA</a>
-          </div>
-        </div>
-        <div class="footer-col">
-          <h4>Quick Links</h4>
-          <a href="index.html">Home</a>
-          <a href="properties.html">Browse Properties</a>
-          <a href="list-property.html">List Property</a>
-          <a href="about.html">About Us</a>
-          <a href="contact.html">Contact</a>
-        </div>
-        <div class="footer-col">
-          <h4>Services</h4>
-          <a href="properties.html?type=Apartment">Apartments</a>
-          <a href="properties.html?type=House">Houses</a>
-          <a href="properties.html?type=Bedsitter">Bedsitters</a>
-          <a href="contact.html">Property Management</a>
-          <a href="contact.html">Movers &amp; Cleaners</a>
-        </div>
-        <div class="footer-col">
-          <h4>Support</h4>
-          <a href="contact.html">Contact Us</a>
-          <a href="login.html">Login / Sign Up</a>
-          <a href="saved.html">Saved Properties</a>
-        </div>
-        <div class="footer-col">
-          <h4>Stay Updated</h4>
-          <p class="footer-note">Get new listings and offers straight to your inbox.</p>
-          <form class="subscribe-form" id="footer-subscribe-form">
-            <input type="email" placeholder="Your email address" required>
-            <button type="submit">Subscribe</button>
-          </form>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <span>&copy; ${year} Sanefi Consult. All rights reserved. &middot; Powered by <a href="https://deh-emanuels-solutions.bett.website/" target="_blank" rel="noopener">Deh Emanuel's Solutions</a></span>
-        <div class="footer-legal">
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
-        </div>
-      </div>
-    </footer>`;
+renderNavbar("list");
+renderFooter();
 
-  const subscribeForm = document.getElementById("footer-subscribe-form");
-  if (subscribeForm) {
-    subscribeForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      subscribeForm.innerHTML = `<span style="color:#fff;font-size:13px;">Thanks for subscribing!</span>`;
-    });
+const form = document.getElementById("listing-form");
+const submitBtn = document.getElementById("submit-btn");
+const errorBox = document.getElementById("form-error");
+const successBox = document.getElementById("form-success");
+const signedOutNotice = document.getElementById("signed-out-notice");
+
+let currentUser = null;
+auth.onAuthStateChanged((user) => {
+  currentUser = user;
+  signedOutNotice.style.display = user ? "none" : "block";
+  submitBtn.disabled = !user;
+});
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.style.display = "none";
+  successBox.style.display = "none";
+
+  if (!currentUser) {
+    errorBox.textContent = "Please log in first.";
+    errorBox.style.display = "block";
+    return;
   }
-}
+
+  const data = new FormData(form);
+  const photos = document.getElementById("photos-input").files;
+  const isLand = data.get("type") === "Land";
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = photos.length ? "Uploading photos..." : "Publishing...";
+
+  try {
+    const imageUrls = photos.length ? await uploadAllToCloudinary(photos) : [];
+
+    submitBtn.textContent = "Publishing...";
+
+    const docRef = await db.collection("propertiess").add({
+      title: data.get("title"),
+      listingType: data.get("listingType"),
+      type: data.get("type"),
+      price: Number(data.get("price")),
+      location: data.get("location"),
+      county: data.get("county"),
+      // Residential fields (ignored/zeroed for land listings).
+      bedrooms: isLand ? 0 : Number(data.get("bedrooms")) || 0,
+      bathrooms: isLand ? 0 : Number(data.get("bathrooms")) || 0,
+      parking: isLand ? 0 : Number(data.get("parking")) || 0,
+      // Land-specific fields (only meaningful when type === "Land").
+      landSize: isLand ? Number(data.get("landSize")) || 0 : null,
+      landSizeUnit: isLand ? data.get("landSizeUnit") : null,
+      titleDeedVerified: isLand ? data.get("titleDeedVerified") === "yes" : false,
+      hasElectricity: isLand ? data.get("hasElectricity") === "yes" : false,
+      hasWater: isLand ? data.get("hasWater") === "yes" : false,
+      hasAccessRoad: isLand ? data.get("hasAccessRoad") === "yes" : false,
+      description: data.get("description"),
+      ownerName: data.get("ownerName"),
+      ownerContact: data.get("ownerContact"),
+      imageUrls: imageUrls,
+      ownerId: currentUser.uid,
+      featured: false,
+      status: "pending",
+      availability: "available",
+      views: 0,
+      savesCount: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    successBox.textContent = "Thanks! Your listing has been submitted and will go live once our team reviews and approves it.";
+    successBox.style.display = "block";
+    form.reset();
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Publish Listing";
+  } catch (err) {
+    console.error(err);
+    errorBox.textContent = "Couldn't publish your listing: " + err.message;
+    errorBox.style.display = "block";
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Publish Listing";
+  }
+});
