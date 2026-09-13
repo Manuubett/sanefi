@@ -1,4 +1,3 @@
-
 renderNavbar(null);
 renderFooter();
 
@@ -39,13 +38,11 @@ if (!id) {
       return;
     }
     const p = doc.data();
-    document.getElementById("page-title").textContent = `${p.title} - HomeLink Kenya`;
+    document.getElementById("page-title").textContent = `${p.title} - Sanefi Consult`;
 
     const photos = (p.imageUrls && p.imageUrls.length) ? p.imageUrls : ["img/placeholder-property.jpg"];
     const thumbs = photos.length > 1
-      ? `<div class="gallery-thumbs">${photos.map((u, i) =>
-          `<img src="${u}" alt="" data-index="${i}" class="${i === 0 ? "active" : ""}">`
-        ).join("")}</div>`
+      ? `<div class="gallery-thumbs">${photos.map((u, i) => `<img src="${u}" alt="" data-index="${i}" class="${i === 0 ? "active" : ""}">`).join("")}</div>`
       : "";
     const price = Number(p.price || 0).toLocaleString("en-KE");
 
@@ -55,6 +52,19 @@ if (!id) {
     const viewCount = Number(p.views || 0);
     const saved = typeof isPropertySaved === "function" && isPropertySaved(id);
     const ownerName = p.ownerName || "Property Owner";
+    const isLand = p.type === "Land";
+
+    const statsHTML = isLand
+      ? `
+        <span>&#128207; ${p.landSize || "?"} ${escapeHTML(p.landSizeUnit || "")}</span>
+        <span>${p.titleDeedVerified ? "&#9989; Verified Title" : "&#9888; Unverified Title"}</span>
+        <span>${p.hasElectricity ? "&#9889; Electricity" : "No Electricity"}</span>
+        <span>${p.hasWater ? "&#128167; Water" : "No Water Connection"}</span>
+        <span>${p.hasAccessRoad ? "&#128739; Access Road" : "No Access Road"}</span>`
+      : `
+        <span>&#128716; ${p.bedrooms ?? 0} Beds</span>
+        <span>&#128703; ${p.bathrooms ?? 0} Baths</span>
+        <span>&#128663; ${p.parking ?? 0} Parking</span>`;
 
     const callWhatsAppButtons = isPhoneNumber(contact)
       ? `
@@ -66,14 +76,14 @@ if (!id) {
 
     detailRoot.innerHTML = `
       <div class="detail-gallery">
-        <img src="${photos[0]}" alt="${escapeHTML(p.title || "")}" id="main-photo">
+        <img src="${photos[0]}" alt="${escapeHTML(p.title || "")}" id="main-gallery-image">
         ${thumbs}
       </div>
       <div class="detail-info">
         <span class="badge">${escapeHTML(p.listingType || "For Rent")}</span>
         <h1>${escapeHTML(p.title || "")}</h1>
         <p class="location">&#128205; ${escapeHTML(p.location || "")}</p>
-        <p class="price">KSh ${price} / month</p>
+        <p class="price">KSh ${price}${isLand ? "" : " / month"}</p>
 
         <div class="detail-actions">
           ${callWhatsAppButtons}
@@ -90,9 +100,7 @@ if (!id) {
         </div>
 
         <div class="property-stats detail-stats">
-          <span>&#128716; ${p.bedrooms ?? 0} Beds</span>
-          <span>&#128703; ${p.bathrooms ?? 0} Baths</span>
-          <span>&#128663; ${p.parking ?? 0} Parking</span>
+          ${statsHTML}
         </div>
         <h3>Description</h3>
         <p>${escapeHTML(p.description || "No description provided.")}</p>
@@ -111,12 +119,12 @@ if (!id) {
         </div>
       </div>`;
 
-    // Gallery: clicking a thumbnail swaps the main photo
-    const mainPhoto = document.getElementById("main-photo");
-    detailRoot.querySelectorAll(".gallery-thumbs img").forEach((thumb) => {
+    // Gallery: clicking a thumbnail swaps the main photo and highlights it.
+    const mainImage = document.getElementById("main-gallery-image");
+    document.querySelectorAll(".gallery-thumbs img").forEach((thumb) => {
       thumb.addEventListener("click", () => {
-        mainPhoto.src = photos[Number(thumb.dataset.index)];
-        detailRoot.querySelectorAll(".gallery-thumbs img").forEach((t) => t.classList.remove("active"));
+        mainImage.src = photos[Number(thumb.dataset.index)];
+        document.querySelectorAll(".gallery-thumbs img").forEach((t) => t.classList.remove("active"));
         thumb.classList.add("active");
       });
     });
