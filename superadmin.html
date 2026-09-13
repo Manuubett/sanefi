@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin - Sanefi Consult</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="navbar-root"></div>
+
+<section class="page-header">
+  <h1>Super Admin</h1>
+  <p class="form-subtitle">Developer-only controls. Locking the site blocks every visitor, including logged-in users, until you unlock it.</p>
+</section>
+
+<section class="featured" style="max-width: 700px;">
+  <div id="superadmin-status"></div>
+  <div id="superadmin-panel" style="display:none;">
+
+    <div class="stat-card" style="text-align:left; margin-bottom: 24px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <div class="stat-label" style="margin-top:0;">Current Status</div>
+          <div class="stat-number" id="lock-status-text" style="font-size:20px;">Loading&hellip;</div>
+        </div>
+        <span class="admin-row-status" id="lock-status-badge">&hellip;</span>
+      </div>
+    </div>
+
+    <form class="listing-form" id="lock-form">
+      <label>
+        <span style="display:flex; align-items:center; gap:8px; font-weight:600;">
+          <input type="checkbox" id="lock-toggle" style="width:auto;">
+          Lock the site (shows a maintenance overlay to every visitor)
+        </span>
+      </label>
+
+      <label>Maintenance Message
+        <textarea id="lock-message" rows="3" placeholder="We're making some updates. Please check back shortly.">We're making some updates. Please check back shortly.</textarea>
+      </label>
+
+      <button type="submit" class="btn-primary btn-large">Save Settings</button>
+      <p class="alert alert-success" id="lock-success" style="display:none;">Saved. Change is live on every page immediately.</p>
+      <p class="alert alert-error" id="lock-error" style="display:none;"></p>
+    </form>
+  </div>
+</section>
+
+<div id="footer-root"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script src="firebase-config.js"></script>
+<script src="nav.js"></script>
+<script src="footer.js"></script>
+<script src="superadmin.js"></script>
+</body>
+</html>
