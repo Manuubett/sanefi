@@ -3,15 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title">Property - HomeLink Kenya</title>
+<title>List Your Property - Sanefi Consult</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="navbar-root"></div>
 
-<section class="detail" id="detail-root">
-  <p class="empty-state">Loading property&hellip;</p>
+<section class="form-page">
+  <h1>List Your Property</h1>
+  <p class="form-subtitle">Reach thousands of renters across Kenya. It only takes a few minutes.</p>
+
+  <p class="alert alert-error" id="signed-out-notice" style="display:none;">
+    You need to <a href="login.html">log in</a> before listing a property.
+  </p>
+  <p class="alert alert-error" id="form-error" style="display:none;"></p>
+  <p class="alert alert-success" id="form-success" style="display:none;"></p>
+
+  <form class="listing-form" id="listing-form">
+    <div class="form-row">
+      <label>Title
+        <input type="text" name="title" placeholder="e.g. 2 Bedroom Apartment" required>
+      </label>
+      <label>Listing Type
+        <select name="listingType">
+          <option>For Rent</option>
+          <option>For Sale</option>
+          <option>For Lease</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Property Type
+        <select name="type">
+          <option>Apartment</option>
+          <option>Bedsitter</option>
+          <option>House</option>
+          <option>Studio</option>
+          <option>1 Bedroom</option>
+          <option>2 Bedroom</option>
+          <option>3 Bedroom (Own Compound)</option>
+          <option>3 Bedroom (Shared Compound)</option>
+          <option>Land</option>
+          <option>Commercial Space</option>
+        </select>
+      </label>
+      <label>Price (KSh / month)
+        <input type="number" name="price" min="0" placeholder="25000" required>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Location
+        <input type="text" name="location" placeholder="e.g. Kilimani, Nairobi" required>
+      </label>
+      <label>County
+        <input type="text" name="county" placeholder="e.g. Nairobi" required>
+      </label>
+    </div>
+
+    <div class="form-row form-row-3" id="residential-fields">
+      <label>Bedrooms <input type="number" name="bedrooms" min="0" value="1"></label>
+      <label>Bathrooms <input type="number" name="bathrooms" min="0" value="1"></label>
+      <label>Parking <input type="number" name="parking" min="0" value="0"></label>
+    </div>
+
+    <div id="land-fields" style="display:none;">
+      <div class="form-row">
+        <label>Land Size
+          <input type="number" name="landSize" min="0" step="0.01" placeholder="e.g. 0.5">
+        </label>
+        <label>Size Unit
+          <select name="landSizeUnit">
+            <option>Acres</option>
+            <option>Plots (50x100)</option>
+            <option>Square Meters</option>
+            <option>Hectares</option>
+          </select>
+        </label>
+      </div>
+      <label class="full-width" style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" name="titleDeedVerified" value="yes" style="width:auto;"> Title Deed Verified
+      </label>
+      <label class="full-width" style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" name="hasElectricity" value="yes" style="width:auto;"> Electricity Available
+      </label>
+      <label class="full-width" style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" name="hasWater" value="yes" style="width:auto;"> Water Available
+      </label>
+      <label class="full-width" style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" name="hasAccessRoad" value="yes" style="width:auto;"> Access Road Available
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Your Name / Business Name
+        <input type="text" name="ownerName" placeholder="e.g. Jane Wanjiru or Grand Ventures Properties" required>
+      </label>
+      <label>Your contact (phone or email, shown to renters)
+        <input type="text" name="ownerContact" placeholder="e.g. 07XX XXX XXX" required>
+      </label>
+    </div>
+
+    <label class="full-width">Description
+      <textarea name="description" rows="4" placeholder="Describe the property..."></textarea>
+    </label>
+
+    <label class="full-width">Photos
+      <input type="file" name="photos" id="photos-input" accept="image/*" multiple>
+      <small>Uploaded to Cloudinary automatically when you submit.</small>
+    </label>
+
+    <button type="submit" class="btn-primary btn-large" id="submit-btn">Publish Listing</button>
+  </form>
 </section>
 
 <div id="footer-root"></div>
@@ -24,6 +129,24 @@
 <script src="nav.js"></script>
 <script src="footer.js"></script>
 <script src="property-card.js"></script>
-<script src="property.js"></script>
+<script src="cloudinary.js"></script>
+<script src="list-property.js"></script>
+<script>
+  // Toggle between residential fields (beds/baths/parking) and
+  // land-specific fields (size + verification checkboxes) based on
+  // the selected Property Type.
+  const typeSelect = document.querySelector('select[name="type"]');
+  const residentialFields = document.getElementById("residential-fields");
+  const landFields = document.getElementById("land-fields");
+
+  function toggleFieldsForType() {
+    const isLand = typeSelect.value === "Land";
+    residentialFields.style.display = isLand ? "none" : "grid";
+    landFields.style.display = isLand ? "block" : "none";
+  }
+  typeSelect.addEventListener("change", toggleFieldsForType);
+  toggleFieldsForType();
+</script>
+
 </body>
 </html>
