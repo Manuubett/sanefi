@@ -14,6 +14,25 @@ auth.onAuthStateChanged((user) => {
   submitBtn.disabled = !user;
 });
 
+// Strips common Markdown formatting so text pasted from AI tools or
+// formatted docs (headings, bold/italic, bullet dashes, links, code
+// backticks) doesn't show up as raw symbols on a plain-text description.
+function stripMarkdown(text) {
+  if (!text) return text;
+  return text
+    .replace(/^#{1,6}\s+/gm, "")                       // ## Heading -> Heading
+    .replace(/\*\*(.+?)\*\*/g, "$1")                   // **bold** -> bold
+    .replace(/__(.+?)__/g, "$1")                       // __bold__ -> bold
+    .replace(/\*(.+?)\*/g, "$1")                       // *italic* -> italic
+    .replace(/_(.+?)_/g, "$1")                         // _italic_ -> italic
+    .replace(/`([^`]+)`/g, "$1")                       // `code` -> code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")           // [text](url) -> text
+    .replace(/^[\*\-]\s+/gm, "\u2022 ")                // - item / * item -> • item
+    .replace(/(\S)--(\S)/g, "$1\u2014$2")              // word--word -> word—word
+    .replace(/\s--\s/g, " \u2014 ")                    // " -- " -> " — "
+    .trim();
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   errorBox.style.display = "none";
@@ -55,7 +74,7 @@ form.addEventListener("submit", async (e) => {
       hasElectricity: isLand ? data.get("hasElectricity") === "yes" : false,
       hasWater: isLand ? data.get("hasWater") === "yes" : false,
       hasAccessRoad: isLand ? data.get("hasAccessRoad") === "yes" : false,
-      description: data.get("description"),
+      description: stripMarkdown(data.get("description")),
       ownerName: data.get("ownerName"),
       ownerContact: data.get("ownerContact"),
       imageUrls: imageUrls,
