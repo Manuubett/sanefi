@@ -131,15 +131,47 @@ if (!id) {
       }).catch(() => { /* not an admin, or check failed — stay hidden */ });
     });
 
-    // Gallery: clicking a thumbnail swaps the main photo and highlights it.
+    // Gallery: auto-advances through photos every 4s, and clicking a
+    // thumbnail jumps straight to that photo (then resets the timer so
+    // it doesn't fight the visitor's manual choice).
     const mainImage = document.getElementById("main-gallery-image");
-    document.querySelectorAll(".gallery-thumbs img").forEach((thumb) => {
+    const thumbEls = Array.from(document.querySelectorAll(".gallery-thumbs img"));
+    let currentIndex = 0;
+    let autoAdvanceTimer = null;
+
+    function showPhoto(index) {
+      currentIndex = index;
+      mainImage.style.opacity = "0";
+      setTimeout(() => {
+        mainImage.src = photos[currentIndex];
+        mainImage.style.opacity = "1";
+      }, 150);
+      thumbEls.forEach((t) => t.classList.remove("active"));
+      if (thumbEls[currentIndex]) thumbEls[currentIndex].classList.add("active");
+    }
+
+    function startAutoAdvance() {
+      if (photos.length <= 1) return; // nothing to cycle through
+      clearInterval(autoAdvanceTimer);
+      autoAdvanceTimer = setInterval(() => {
+        showPhoto((currentIndex + 1) % photos.length);
+      }, 4000);
+    }
+
+    thumbEls.forEach((thumb) => {
       thumb.addEventListener("click", () => {
-        mainImage.src = photos[Number(thumb.dataset.index)];
-        document.querySelectorAll(".gallery-thumbs img").forEach((t) => t.classList.remove("active"));
-        thumb.classList.add("active");
+        showPhoto(Number(thumb.dataset.index));
+        startAutoAdvance(); // restart the cycle from their chosen photo
       });
     });
+
+    startAutoAdvance();
+
+    const galleryEl = document.querySelector(".detail-gallery");
+    if (galleryEl) {
+      galleryEl.addEventListener("mouseenter", () => clearInterval(autoAdvanceTimer));
+      galleryEl.addEventListener("mouseleave", startAutoAdvance);
+    }
 
     // Save button
     const saveBtn = document.getElementById("save-btn");
