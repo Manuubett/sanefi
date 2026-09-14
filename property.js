@@ -29,6 +29,10 @@ function initials(name) {
     .join("");
 }
 
+// Public inquiries always route through Sanefi Consult's own number, not
+// the poster's personal contact — that stays admin-only (see below).
+const COMPANY_PHONE = "0724006117";
+
 if (!id) {
   detailRoot.innerHTML = `<p class="empty-state">No property specified. <a href="properties.html">Browse all properties</a>.</p>`;
 } else {
@@ -66,13 +70,9 @@ if (!id) {
         <span>&#128703; ${p.bathrooms ?? 0} Baths</span>
         <span>&#128663; ${p.parking ?? 0} Parking</span>`;
 
-    const callWhatsAppButtons = isPhoneNumber(contact)
-      ? `
-        <a href="tel:${contact.replace(/\s/g, "")}" class="action-btn btn-call">&#128222; Call</a>
-        <a href="https://wa.me/${toWhatsAppNumber(contact)}" target="_blank" rel="noopener" class="action-btn btn-whatsapp">&#128172; WhatsApp</a>`
-      : (contact
-          ? `<a href="mailto:${contact}" class="action-btn btn-call">&#9993; Email Owner</a>`
-          : "");
+    const callWhatsAppButtons = `
+        <a href="tel:${COMPANY_PHONE}" class="action-btn btn-call">&#128222; Call</a>
+        <a href="https://wa.me/${toWhatsAppNumber(COMPANY_PHONE)}" target="_blank" rel="noopener" class="action-btn btn-whatsapp">&#128172; WhatsApp</a>`;
 
     detailRoot.innerHTML = `
       <div class="detail-gallery">
@@ -113,11 +113,23 @@ if (!id) {
               <div class="agent-role">Marketed by</div>
             </div>
           </div>
-          <p class="agent-contact-line">&#128222; ${escapeHTML(contact || "Not provided")}</p>
+          <p class="agent-contact-line" id="poster-contact-line" style="display:none;">&#128222; ${escapeHTML(contact || "Not provided")}</p>
           <p class="agent-contact-line">&#128205; ${escapeHTML(p.county || p.location || "")}</p>
           <span class="report-link" id="report-link">&#9873; Report this listing</span>
         </div>
       </div>`;
+
+    // Reveal the poster's actual contact only to logged-in admins — the
+    // public sees Sanefi's own Call/WhatsApp buttons above instead.
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+      db.collection("admins").doc(user.uid).get().then((adminDoc) => {
+        if (adminDoc.exists) {
+          const line = document.getElementById("poster-contact-line");
+          if (line) line.style.display = "block";
+        }
+      }).catch(() => { /* not an admin, or check failed — stay hidden */ });
+    });
 
     // Gallery: clicking a thumbnail swaps the main photo and highlights it.
     const mainImage = document.getElementById("main-gallery-image");
