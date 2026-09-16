@@ -42,6 +42,89 @@ img { max-width: 100%; display: block; }
 .nav-actions { display: flex; align-items: center; gap: 20px; font-size: 14.5px; }
 .nav-action-btn { background: none; border: none; cursor: pointer; font: inherit; color: inherit; padding: 0; }
 
+
+/* ---------- Edit Listing Modal (append to style.css) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-box h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.modal-box label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.modal-box input,
+.modal-box textarea {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-weight: normal;
+  font-size: 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.modal-box textarea {
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-edit-btn {
+  /* uses .btn-secondary styling already defined elsewhere */
+}
+
+.admin-search-input {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin: 16px 0;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.admin-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
 /* ---------- Mobile nav toggle ---------- */
 .nav-toggle {
     display: none; flex-direction: column; justify-content: center; gap: 5px;
