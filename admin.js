@@ -81,19 +81,41 @@ function adminRowHTML(id, data) {
 
 /* ---------------- Dashboard: cheap aggregation counts, no full collection read ---------------- */
 
+// Uses the fast count() aggregation query when the loaded Firestore SDK supports it
+// (compat SDK v9.19+). Falls back to a plain get()+size count on older SDKs so the
+// dashboard still works — just with a normal read cost instead of the reduced
+// aggregation-query cost. If you're seeing the fallback used, it's worth checking
+// why an older Firebase SDK is being served (cache, service worker, or a stray
+// <script> tag elsewhere loading an older version).
+let countFallbackWarned = false;
+async function getCount(query) {
+  if (typeof query.count === "function") {
+    try {
+      const snap = await query.count().get();
+      return snap.data().count;
+    } catch (err) {
+      console.warn("count() aggregation failed, falling back:", err);
+    }
+  } else if (!countFallbackWarned) {
+    countFallbackWarned = true;
+    console.warn(
+      "Firestore count() aggregation isn't available on this SDK — falling back to a full read for counts. " +
+      "Check firebase.SDK_VERSION; this feature needs v9.19+ (v10.13.0 is what admin.html requests)."
+    );
+  }
+  const snap = await query.get();
+  return snap.size;
+}
+
 async function loadDashboardCounts() {
   try {
-    const [pendingSnap, rejectedSnap, approvedTotalSnap, bookedSnap] = await Promise.all([
-      db.collection("propertiess").where("status", "==", "pending").count().get(),
-      db.collection("propertiess").where("status", "==", "rejected").count().get(),
-      db.collection("propertiess").where("status", "==", "approved").count().get(),
-      db.collection("propertiess").where("availability", "==", "booked").count().get(),
+    const [pending, rejected, approvedTotal, booked] = await Promise.all([
+      getCount(db.collection("propertiess").where("status", "==", "pending")),
+      getCount(db.collection("propertiess").where("status", "==", "rejected")),
+      getCount(db.collection("propertiess").where("status", "==", "approved")),
+      getCount(db.collection("propertiess").where("availability", "==", "booked")),
     ]);
-
-    const pending = pendingSnap.data().count;
-    const rejected = rejectedSnap.data().count;
-    const approvedTotal = approvedTotalSnap.data().count; // includes booked, since booked items keep status "approved"
-    const booked = bookedSnap.data().count;
+    // approvedTotal includes booked, since booked items keep status "approved"
     const approvedNotBooked = Math.max(0, approvedTotal - booked);
     const total = pending + rejected + approvedTotal;
 
