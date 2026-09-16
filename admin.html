@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div id="navbar-root"></div>
 
 <section class="page-header">
@@ -17,77 +16,56 @@
 
 <section class="featured">
   <div id="admin-status"></div>
-
-  <!-- Site Lock Control -->
-  <div id="site-lock-control" style="max-width:420px; padding:20px; border:1px solid #ddd; border-radius:10px; font-family:system-ui, sans-serif; margin-bottom:24px;">
-    <h3 style="margin-top:0;">Site Lock Control</h3>
-    <p id="lock-status" style="font-size:14px; color:#555;">Checking status…</p>
-
-    <label style="display:block; margin:12px 0 6px; font-size:14px;">Message shown to visitors:</label>
-    <textarea id="lock-message" rows="2" style="width:100%; padding:8px; box-sizing:border-box; font-size:14px;"
-      placeholder="We're making some updates. Please check back shortly."></textarea>
-
-    <div style="margin-top:14px; display:flex; gap:10px;">
-      <button id="lock-btn" type="button" style="padding:10px 16px; background:#c0392b; color:#fff; border:none; border-radius:6px; cursor:pointer;">
-        Lock Site
-      </button>
-      <button id="unlock-btn" type="button" style="padding:10px 16px; background:#27ae60; color:#fff; border:none; border-radius:6px; cursor:pointer;">
-        Unlock Site
-      </button>
-    </div>
-  </div>
-  <!-- /Site Lock Control -->
-
   <div class="dashboard-stats" id="dashboard-stats"></div>
   <div class="dashboard-toplists" id="dashboard-toplists"></div>
+  <input type="text" id="admin-search" class="admin-search-input" placeholder="Search by property title&hellip;">
   <div class="admin-tabs" id="admin-tabs"></div>
   <div class="admin-list" id="admin-list"></div>
 </section>
+
+<!-- Edit Listing Modal -->
+<div id="edit-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>Edit Listing</h2>
+    <form id="edit-form">
+      <label>Title
+        <input type="text" id="edit-title" required>
+      </label>
+      <label>Location
+        <input type="text" id="edit-location">
+      </label>
+      <label>Price (KSh)
+        <input type="number" id="edit-price" min="0">
+      </label>
+      <label>Description
+        <textarea id="edit-description" rows="4"></textarea>
+      </label>
+      <label>Image URLs (one per line)
+        <textarea id="edit-imageUrls" rows="3"></textarea>
+      </label>
+      <label>Poster Name
+        <input type="text" id="edit-ownerName">
+      </label>
+      <label>Poster Contact
+        <input type="text" id="edit-ownerContact">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="edit-cancel-btn">Cancel</button>
+        <button type="submit" class="btn-primary" id="edit-save-btn">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div id="footer-root"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-
 <script src="firebase-config.js"></script>
 <script src="nav.js"></script>
 <script src="footer.js"></script>
 <script src="property-card.js"></script>
 <script src="admin.js"></script>
-
-<script>
-  // Site Lock Control logic — writes/reads settings/siteLock in Firestore.
-  // Restrict writes to this document to your admin UID in Firestore Rules.
-  (function () {
-    const lockDoc = db.doc("settings/siteLock");
-    const statusEl = document.getElementById("lock-status");
-    const messageEl = document.getElementById("lock-message");
-    const lockBtn = document.getElementById("lock-btn");
-    const unlockBtn = document.getElementById("unlock-btn");
-
-    lockDoc.onSnapshot((snap) => {
-      const data = snap.exists ? snap.data() : { locked: false };
-      statusEl.textContent = data.locked
-        ? "🔴 Site is currently LOCKED for all visitors."
-        : "🟢 Site is currently open to all visitors.";
-      if (data.message) messageEl.value = data.message;
-    });
-
-    lockBtn.addEventListener("click", () => {
-      lockDoc.set(
-        {
-          locked: true,
-          message: messageEl.value.trim() || "We're making some updates. Please check back shortly.",
-        },
-        { merge: true }
-      );
-    });
-
-    unlockBtn.addEventListener("click", () => {
-      lockDoc.set({ locked: false }, { merge: true });
-    });
-  })();
-</script>
 </body>
 </html>
