@@ -18,44 +18,9 @@
   <div id="admin-status"></div>
   <div class="dashboard-stats" id="dashboard-stats"></div>
   <div class="dashboard-toplists" id="dashboard-toplists"></div>
-  <input type="text" id="admin-search" class="admin-search-input" placeholder="Search by property title&hellip;">
   <div class="admin-tabs" id="admin-tabs"></div>
   <div class="admin-list" id="admin-list"></div>
 </section>
-
-<!-- Edit Listing Modal -->
-<div id="edit-modal" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <h2>Edit Listing</h2>
-    <form id="edit-form">
-      <label>Title
-        <input type="text" id="edit-title" required>
-      </label>
-      <label>Location
-        <input type="text" id="edit-location">
-      </label>
-      <label>Price (KSh)
-        <input type="number" id="edit-price" min="0">
-      </label>
-      <label>Description
-        <textarea id="edit-description" rows="4"></textarea>
-      </label>
-      <label>Image URLs (one per line)
-        <textarea id="edit-imageUrls" rows="3"></textarea>
-      </label>
-      <label>Poster Name
-        <input type="text" id="edit-ownerName">
-      </label>
-      <label>Poster Contact
-        <input type="text" id="edit-ownerContact">
-      </label>
-      <div class="modal-actions">
-        <button type="button" class="btn-secondary" id="edit-cancel-btn">Cancel</button>
-        <button type="submit" class="btn-primary" id="edit-save-btn">Save Changes</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <div id="footer-root"></div>
 
@@ -66,6 +31,7 @@
 <script src="nav.js"></script>
 <script src="footer.js"></script>
 <script src="property-card.js"></script>
+<script src="cloudinary.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
