@@ -6,17 +6,14 @@ const dashboardStats = document.getElementById("dashboard-stats");
 const dashboardTopLists = document.getElementById("dashboard-toplists");
 const tabsBox = document.getElementById("admin-tabs");
 const listBox = document.getElementById("admin-list");
-const searchBox = document.getElementById("admin-search");
 
-const PAGE_SIZE = 25;
-
+let allDocs = [];
 let activeTab = "pending";
-let currentDocs = [];      // docs currently loaded & rendered for the active tab/search
-let lastVisible = null;    // Firestore cursor for "Load More"
-let hasMore = false;
-let isLoading = false;
-let searchTerm = "";
-let tabCounts = { pending: 0, approved: 0, rejected: 0, booked: 0, all: 0 };
+
+// Tracks the working set of photo URLs per listing while its edit panel
+// is open. Nothing hits Firestore until Save is clicked — Remove/Add
+// only mutate this in-memory array and the DOM.
+const editingPhotos = new Map();
 
 function formatPrice(price) {
   return "KSh " + Number(price || 0).toLocaleString();
@@ -34,7 +31,17 @@ function isBooked(doc) {
   return getAvailability(doc) === "booked";
 }
 
-/* ---------------- Row rendering ---------------- */
+// escapeHTML (from property-card.js) is fine for text nodes, but values
+// placed inside a value="..." attribute also need quotes escaped, or a
+// title/description containing a " would break out of the attribute.
+function escapeAttr(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 function adminRowHTML(id, data) {
   const status = data.status || "pending";
@@ -59,121 +66,131 @@ function adminRowHTML(id, data) {
     actionButtons = `<button class="btn-primary admin-action-btn" data-action="approve">Re-approve</button>`;
   }
 
+  // Edit is available on every row regardless of status — toggles the
+  // inline panel below this row open/closed, rather than a full-screen
+  // modal that would hide the cover picker.
   actionButtons += `<button class="btn-secondary admin-edit-btn" data-action="edit">Edit</button>`;
 
+  const photos = data.imageUrls && data.imageUrls.length ? data.imageUrls : [];
+  editingPhotos.set(id, photos.slice()); // seed the working copy for this row
+  const coverUrl = data.coverImageUrl && photos.includes(data.coverImageUrl) ? data.coverImageUrl : photos[0];
+  const coverPickerHTML = photos.length > 1
+    ? `<div class="cover-picker" data-id="${id}">
+        ${photos.map((url) => `<img src="${url}" class="cover-picker-thumb ${url === coverUrl ? "active" : ""}" data-url="${url}" title="${url === coverUrl ? "Current cover" : "Click to set as cover"}">`).join("")}
+      </div>`
+    : "";
+
+  const photoThumbsHTML = photos.map((url) => `
+      <div class="edit-photo-thumb-wrap" data-url="${escapeAttr(url)}">
+        <img src="${url}" class="edit-photo-thumb">
+        <button type="button" class="edit-photo-remove">&times;</button>
+      </div>`).join("");
+
   return `
-    <div class="admin-row" data-id="${id}">
-      <img class="admin-row-thumb" src="${(data.imageUrls && data.imageUrls[0]) || 'https://placehold.co/90x70?text=No+Image'}" alt="">
-      <div class="admin-row-info">
-        <strong>${escapeHTML(data.title || "Untitled listing")}</strong>
-        <span>${escapeHTML(data.location || "")} &middot; ${formatPrice(data.price)}</span>
-        <span class="admin-poster">Posted by ${escapeHTML(posterName)} &middot; ${escapeHTML(posterContact)}</span>
+    <div class="admin-row-wrapper" data-id="${id}">
+      <div class="admin-row" data-id="${id}">
+        <img class="admin-row-thumb" src="${coverUrl || 'https://placehold.co/90x70?text=No+Image'}" alt="">
+        <div class="admin-row-info">
+          <strong>${escapeHTML(data.title || "Untitled listing")}</strong>
+          <span>${escapeHTML(data.location || "")} &middot; ${formatPrice(data.price)}</span>
+          <span class="admin-poster">Posted by ${escapeHTML(posterName)} &middot; ${escapeHTML(posterContact)}</span>
+          ${coverPickerHTML}
+        </div>
+        <span class="admin-row-status ${booked ? "status-booked" : "status-" + status}">
+          ${booked ? "Booked" : (status === "approved" ? "Approved" : status === "rejected" ? "Rejected" : "Pending review")}
+        </span>
+        <div class="admin-row-actions">
+          ${actionButtons}
+          <button class="admin-delete-btn" data-action="delete" title="Delete permanently">&#128465;</button>
+        </div>
       </div>
-      <span class="admin-row-status ${booked ? "status-booked" : "status-" + status}">
-        ${booked ? "Booked" : (status === "approved" ? "Approved" : status === "rejected" ? "Rejected" : "Pending review")}
-      </span>
-      <div class="admin-row-actions">
-        ${actionButtons}
-        <button class="admin-delete-btn" data-action="delete" title="Delete permanently">&#128465;</button>
+
+      <div class="edit-panel" id="edit-panel-${id}" style="display:none;">
+        <form class="listing-form edit-inline-form" data-id="${id}">
+          <div class="form-row">
+            <label>Title
+              <input type="text" class="edit-title" value="${escapeAttr(data.title || "")}" required>
+            </label>
+            <label>Location
+              <input type="text" class="edit-location" value="${escapeAttr(data.location || "")}">
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Price (KSh)
+              <input type="number" class="edit-price" min="0" value="${data.price || 0}">
+            </label>
+            <label>Poster Name
+              <input type="text" class="edit-ownerName" value="${escapeAttr(data.ownerName || "")}">
+            </label>
+          </div>
+          <label class="full-width">Poster Contact
+            <input type="text" class="edit-ownerContact" value="${escapeAttr(data.ownerContact || "")}">
+          </label>
+          <label class="full-width">Description
+            <textarea class="edit-description" rows="3">${escapeHTML(data.description || "")}</textarea>
+          </label>
+          <div class="full-width">
+            <label>Photos</label>
+            <div class="edit-photo-grid" id="edit-photos-${id}">${photoThumbsHTML}</div>
+            <input type="file" class="edit-photo-input" accept="image/*" multiple style="margin-top:8px;">
+            <small>Click &times; on a photo to remove it. Add new ones with the file picker above.</small>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:6px;">
+            <button type="submit" class="btn-primary" style="width:auto; padding:10px 20px;">Save Changes</button>
+            <button type="button" class="btn-secondary edit-cancel-btn" style="width:auto; padding:10px 20px;">Cancel</button>
+          </div>
+        </form>
       </div>
     </div>`;
 }
 
-/* ---------------- Dashboard: cheap aggregation counts, no full collection read ---------------- */
+function renderDashboard() {
+  const total = allDocs.length;
+  const counts = { pending: 0, approved: 0, rejected: 0, booked: 0 };
+  allDocs.forEach((doc) => {
+    if (isBooked(doc)) counts.booked++;
+    else if (counts[getStatus(doc)] !== undefined) counts[getStatus(doc)]++;
+  });
 
-// Uses the fast count() aggregation query when the loaded Firestore SDK supports it
-// (compat SDK v9.19+). Falls back to a plain get()+size count on older SDKs so the
-// dashboard still works — just with a normal read cost instead of the reduced
-// aggregation-query cost. If you're seeing the fallback used, it's worth checking
-// why an older Firebase SDK is being served (cache, service worker, or a stray
-// <script> tag elsewhere loading an older version).
-let countFallbackWarned = false;
-async function getCount(query) {
-  if (typeof query.count === "function") {
-    try {
-      const snap = await query.count().get();
-      return snap.data().count;
-    } catch (err) {
-      console.warn("count() aggregation failed, falling back:", err);
-    }
-  } else if (!countFallbackWarned) {
-    countFallbackWarned = true;
-    console.warn(
-      "Firestore count() aggregation isn't available on this SDK — falling back to a full read for counts. " +
-      "Check firebase.SDK_VERSION; this feature needs v9.19+ (v10.13.0 is what admin.html requests)."
-    );
-  }
-  const snap = await query.get();
-  return snap.size;
-}
+  dashboardStats.innerHTML = `
+    <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Total Listings</div></div>
+    <div class="stat-card"><div class="stat-number">${counts.pending}</div><div class="stat-label">Pending Review</div></div>
+    <div class="stat-card"><div class="stat-number">${counts.approved}</div><div class="stat-label">Approved</div></div>
+    <div class="stat-card"><div class="stat-number">${counts.booked}</div><div class="stat-label">Booked</div></div>
+    <div class="stat-card"><div class="stat-number">${counts.rejected}</div><div class="stat-label">Rejected</div></div>`;
 
-async function loadDashboardCounts() {
-  try {
-    const [pending, rejected, approvedTotal, booked] = await Promise.all([
-      getCount(db.collection("propertiess").where("status", "==", "pending")),
-      getCount(db.collection("propertiess").where("status", "==", "rejected")),
-      getCount(db.collection("propertiess").where("status", "==", "approved")),
-      getCount(db.collection("propertiess").where("availability", "==", "booked")),
-    ]);
-    // approvedTotal includes booked, since booked items keep status "approved"
-    const approvedNotBooked = Math.max(0, approvedTotal - booked);
-    const total = pending + rejected + approvedTotal;
-
-    tabCounts = { pending, approved: approvedNotBooked, rejected, booked, all: total };
-
-    dashboardStats.innerHTML = `
-      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Total Listings</div></div>
-      <div class="stat-card"><div class="stat-number">${pending}</div><div class="stat-label">Pending Review</div></div>
-      <div class="stat-card"><div class="stat-number">${approvedNotBooked}</div><div class="stat-label">Approved</div></div>
-      <div class="stat-card"><div class="stat-number">${booked}</div><div class="stat-label">Booked</div></div>
-      <div class="stat-card"><div class="stat-number">${rejected}</div><div class="stat-label">Rejected</div></div>`;
-  } catch (err) {
-    console.error("Dashboard count error:", err);
-    dashboardStats.innerHTML = `<p class="empty-state">Couldn't load dashboard stats: ${err.message}</p>`;
-  }
-}
-
-/* ---------------- Top lists: small indexed queries instead of scanning everything ---------------- */
-
-async function loadTopLists() {
-  const topByField = async (field, label, emptyLabel) => {
-    try {
-      const snap = await db.collection("propertiess")
-        .where(field, ">", 0)
-        .orderBy(field, "desc")
-        .limit(5)
-        .get();
-      if (snap.empty) return `<p class="empty-state" style="padding:10px 0;">${emptyLabel}</p>`;
-      return snap.docs.map((doc) => `
-        <div class="top-list-row">
-          <span class="tl-title">${escapeHTML(doc.data().title || "Untitled listing")}</span>
-          <span class="tl-count">${Number(doc.data()[field] || 0)} ${label}</span>
-        </div>`).join("");
-    } catch (err) {
-      console.error(`Top list error (${field}):`, err);
-      return `<p class="empty-state" style="padding:10px 0;">Couldn't load this list.</p>`;
-    }
+  const topByField = (field, label, emptyLabel) => {
+    const sorted = [...allDocs]
+      .filter((doc) => Number(doc.data()[field] || 0) > 0)
+      .sort((a, b) => Number(b.data()[field] || 0) - Number(a.data()[field] || 0))
+      .slice(0, 5);
+    const rows = sorted.length
+      ? sorted.map((doc) => `
+          <div class="top-list-row">
+            <span class="tl-title">${escapeHTML(doc.data().title || "Untitled listing")}</span>
+            <span class="tl-count">${Number(doc.data()[field] || 0)} ${label}</span>
+          </div>`).join("")
+      : `<p class="empty-state" style="padding:10px 0;">${emptyLabel}</p>`;
+    return rows;
   };
-
-  const [savedRows, viewedRows] = await Promise.all([
-    topByField("savesCount", "saves", "No saves yet."),
-    topByField("views", "views", "No views yet."),
-  ]);
 
   dashboardTopLists.innerHTML = `
     <div class="top-list-card">
       <h4>&#10084; Most Saved</h4>
-      ${savedRows}
+      ${topByField("savesCount", "saves", "No saves yet.")}
     </div>
     <div class="top-list-card">
       <h4>&#128065; Most Viewed</h4>
-      ${viewedRows}
+      ${topByField("views", "views", "No views yet.")}
     </div>`;
 }
 
-/* ---------------- Tabs ---------------- */
-
 function renderTabs() {
+  const counts = { pending: 0, approved: 0, rejected: 0, booked: 0 };
+  allDocs.forEach((doc) => {
+    if (isBooked(doc)) counts.booked++;
+    else if (counts[getStatus(doc)] !== undefined) counts[getStatus(doc)]++;
+  });
   const tabs = [
     { key: "pending", label: "Pending" },
     { key: "approved", label: "Approved" },
@@ -184,139 +201,51 @@ function renderTabs() {
   tabsBox.innerHTML = tabs
     .map((t) => `
       <button class="admin-tab ${activeTab === t.key ? "active" : ""}" data-tab="${t.key}">
-        ${t.label} (${tabCounts[t.key] || 0})
+        ${t.label}${t.key !== "all" ? ` (${counts[t.key] || 0})` : ` (${allDocs.length})`}
       </button>`)
     .join("");
 
   tabsBox.querySelectorAll(".admin-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (btn.dataset.tab === activeTab) return;
       activeTab = btn.dataset.tab;
       renderTabs();
-      resetAndLoadList();
+      renderList();
     });
   });
-}
-
-/* ---------------- Paginated list ---------------- */
-
-function baseQueryForTab(tab) {
-  let ref = db.collection("propertiess");
-  if (tab === "pending") ref = ref.where("status", "==", "pending");
-  else if (tab === "rejected") ref = ref.where("status", "==", "rejected");
-  else if (tab === "approved") ref = ref.where("status", "==", "approved");
-  else if (tab === "booked") ref = ref.where("availability", "==", "booked");
-  // "all" gets no filter
-  return ref.orderBy("createdAt", "desc");
-}
-
-function buildQuery() {
-  // Search overrides the tab filter and searches by title prefix.
-  // Requires a lowercase `titleLower` field on each document (see migration note below).
-  if (searchTerm) {
-    const term = searchTerm.toLowerCase();
-    let ref = db.collection("propertiess")
-      .orderBy("titleLower")
-      .where("titleLower", ">=", term)
-      .where("titleLower", "<=", term + "\uf8ff")
-      .limit(PAGE_SIZE);
-    if (lastVisible) ref = ref.startAfter(lastVisible);
-    return ref;
-  }
-
-  let ref = baseQueryForTab(activeTab).limit(PAGE_SIZE);
-  if (lastVisible) ref = ref.startAfter(lastVisible);
-  return ref;
-}
-
-async function resetAndLoadList() {
-  currentDocs = [];
-  lastVisible = null;
-  hasMore = false;
-  await loadNextPage();
-}
-
-async function loadNextPage() {
-  if (isLoading) return;
-  isLoading = true;
-
-  if (currentDocs.length === 0) {
-    listBox.innerHTML = `<p class="empty-state">Loading properties&hellip;</p>`;
-  }
-
-  try {
-    const snapshot = await buildQuery().get();
-    let docs = snapshot.docs;
-
-    // The "approved" tab can include booked items (booked listings keep status "approved"),
-    // so filter those out client-side; the Booked tab is where they belong.
-    if (activeTab === "approved" && !searchTerm) {
-      docs = docs.filter((d) => !isBooked(d));
-    }
-
-    hasMore = snapshot.docs.length === PAGE_SIZE;
-    lastVisible = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : lastVisible;
-    currentDocs = currentDocs.concat(docs);
-
-    renderList();
-  } catch (err) {
-    console.error(err);
-    if (currentDocs.length === 0) {
-      listBox.innerHTML = `<p class="empty-state">Couldn't load properties: ${err.message}</p>
-        ${err.message && err.message.includes("index")
-          ? `<p class="empty-state" style="font-size:13px;">Firestore needs a composite index for this query — check the browser console for a link to create it automatically.</p>`
-          : ""}`;
-    }
-  } finally {
-    isLoading = false;
-  }
 }
 
 function renderList() {
-  if (currentDocs.length === 0) {
-    listBox.innerHTML = `<p class="empty-state">No listings ${searchTerm ? "match your search" : "in this category"}.</p>`;
+  const filtered = allDocs.filter((doc) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "booked") return isBooked(doc);
+    if (isBooked(doc)) return false; // booked items only live in the Booked tab
+    return getStatus(doc) === activeTab;
+  });
+
+  if (filtered.length === 0) {
+    listBox.innerHTML = `<p class="empty-state">No listings in this category.</p>`;
     return;
   }
-
-  const rowsHTML = currentDocs.map((doc) => adminRowHTML(doc.id, doc.data())).join("");
-  const loadMoreHTML = hasMore
-    ? `<button class="btn-secondary" id="admin-load-more">Load More</button>`
-    : "";
-
-  listBox.innerHTML = `${rowsHTML}<div class="admin-load-more-wrap">${loadMoreHTML}</div>`;
-
+  listBox.innerHTML = filtered.map((doc) => adminRowHTML(doc.id, doc.data())).join("");
   attachActionHandlers();
   attachEditHandlers();
+}
 
-  const loadMoreBtn = document.getElementById("admin-load-more");
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener("click", () => {
-      loadMoreBtn.textContent = "Loading...";
-      loadMoreBtn.disabled = true;
-      loadNextPage();
+function loadProperties() {
+  listBox.innerHTML = `<p class="empty-state">Loading properties&hellip;</p>`;
+  db.collection("propertiess")
+    .orderBy("createdAt", "desc")
+    .get()
+    .then((snapshot) => {
+      allDocs = snapshot.docs;
+      renderDashboard();
+      renderTabs();
+      renderList();
+    })
+    .catch((err) => {
+      console.error(err);
+      listBox.innerHTML = `<p class="empty-state">Couldn't load properties: ${err.message}</p>`;
     });
-  }
-}
-
-/* ---------------- Search ---------------- */
-
-let searchDebounceTimer = null;
-if (searchBox) {
-  searchBox.addEventListener("input", () => {
-    clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => {
-      searchTerm = searchBox.value.trim();
-      resetAndLoadList();
-    }, 350);
-  });
-}
-
-/* ---------------- Row action handlers (approve/reject/book/delete) ---------------- */
-
-function refreshAfterMutation() {
-  // Re-pull counts (they may have changed) and reload just the current page from scratch.
-  loadDashboardCounts();
-  resetAndLoadList();
 }
 
 function attachActionHandlers() {
@@ -328,11 +257,11 @@ function attachActionHandlers() {
       btn.textContent = "Saving...";
       try {
         await db.collection("propertiess").doc(id).update({ featured: !currentlyFeatured });
-        refreshAfterMutation();
+        loadProperties();
       } catch (err) {
         console.error(err);
         alert("Couldn't update this listing: " + err.message);
-        refreshAfterMutation();
+        loadProperties();
       }
     });
   });
@@ -353,11 +282,24 @@ function attachActionHandlers() {
       btn.textContent = "Saving...";
       try {
         await db.collection("propertiess").doc(id).update(update);
-        refreshAfterMutation();
+        loadProperties();
       } catch (err) {
         console.error(err);
         alert("Couldn't update this listing: " + err.message);
-        refreshAfterMutation();
+        loadProperties();
+      }
+    });
+  });
+
+  document.querySelectorAll(".cover-picker-thumb").forEach((thumb) => {
+    thumb.addEventListener("click", async () => {
+      const id = thumb.closest(".cover-picker").dataset.id;
+      const url = thumb.dataset.url;
+      try {
+        await db.collection("propertiess").doc(id).update({ coverImageUrl: url });
+        loadProperties();
+      } catch (err) {
+        alert("Couldn't set cover photo: " + err.message);
       }
     });
   });
@@ -372,98 +314,125 @@ function attachActionHandlers() {
       btn.disabled = true;
       try {
         await db.collection("propertiess").doc(id).delete();
-        refreshAfterMutation();
+        loadProperties();
       } catch (err) {
         console.error(err);
         alert("Couldn't delete this listing: " + err.message);
-        refreshAfterMutation();
+        loadProperties();
       }
     });
   });
 }
 
-/* ---------------- Edit Listing Modal ---------------- */
+/* ---------------- Inline Edit Panel ---------------- */
 
-const editModal = document.getElementById("edit-modal");
-const editForm = document.getElementById("edit-form");
-let editingId = null;
-
-function openEditModal(id, data) {
-  editingId = id;
-  document.getElementById("edit-title").value = data.title || "";
-  document.getElementById("edit-location").value = data.location || "";
-  document.getElementById("edit-price").value = data.price || "";
-  document.getElementById("edit-description").value = data.description || "";
-  document.getElementById("edit-imageUrls").value = (data.imageUrls || []).join("\n");
-  document.getElementById("edit-ownerName").value = data.ownerName || "";
-  document.getElementById("edit-ownerContact").value = data.ownerContact || "";
-  editModal.style.display = "flex";
+function removePhotoFromWorkingSet(wrapEl) {
+  const grid = wrapEl.closest(".edit-photo-grid");
+  const id = grid.id.replace("edit-photos-", "");
+  const url = wrapEl.dataset.url;
+  const arr = editingPhotos.get(id) || [];
+  const idx = arr.indexOf(url);
+  if (idx !== -1) arr.splice(idx, 1);
+  wrapEl.remove();
 }
 
-function closeEditModal() {
-  editModal.style.display = "none";
-  editingId = null;
-  editForm.reset();
+function buildPhotoThumbEl(url) {
+  const wrap = document.createElement("div");
+  wrap.className = "edit-photo-thumb-wrap";
+  wrap.dataset.url = url;
+  wrap.innerHTML = `<img src="${url}" class="edit-photo-thumb"><button type="button" class="edit-photo-remove">&times;</button>`;
+  wrap.querySelector(".edit-photo-remove").addEventListener("click", () => removePhotoFromWorkingSet(wrap));
+  return wrap;
 }
-
-document.getElementById("edit-cancel-btn").addEventListener("click", closeEditModal);
-editModal.addEventListener("click", (e) => {
-  if (e.target === editModal) closeEditModal();
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && editModal.style.display === "flex") closeEditModal();
-});
-
-editForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!editingId) return;
-
-  const saveBtn = document.getElementById("edit-save-btn");
-  saveBtn.disabled = true;
-  saveBtn.textContent = "Saving...";
-
-  const titleValue = document.getElementById("edit-title").value.trim();
-  const imageUrls = document.getElementById("edit-imageUrls").value
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const update = {
-    title: titleValue,
-    titleLower: titleValue.toLowerCase(), // keeps search index in sync
-    location: document.getElementById("edit-location").value.trim(),
-    price: Number(document.getElementById("edit-price").value || 0),
-    description: document.getElementById("edit-description").value.trim(),
-    imageUrls,
-    ownerName: document.getElementById("edit-ownerName").value.trim(),
-    ownerContact: document.getElementById("edit-ownerContact").value.trim(),
-  };
-
-  try {
-    await db.collection("propertiess").doc(editingId).update(update);
-    closeEditModal();
-    refreshAfterMutation();
-  } catch (err) {
-    console.error(err);
-    alert("Couldn't save changes: " + err.message);
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = "Save Changes";
-  }
-});
 
 function attachEditHandlers() {
+  // Remove a photo from the working set (no Firestore write until Save).
+  document.querySelectorAll(".edit-photo-remove").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const wrap = btn.closest(".edit-photo-thumb-wrap");
+      removePhotoFromWorkingSet(wrap);
+    });
+  });
+
+  // Upload new photos via Cloudinary and add them to the working set.
+  document.querySelectorAll(".edit-photo-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const files = input.files;
+      if (!files || !files.length) return;
+      const grid = input.closest(".edit-panel").querySelector(".edit-photo-grid");
+      const id = grid.id.replace("edit-photos-", "");
+
+      input.disabled = true;
+      try {
+        const urls = await uploadAllToCloudinary(files);
+        const arr = editingPhotos.get(id) || [];
+        urls.forEach((url) => {
+          arr.push(url);
+          grid.appendChild(buildPhotoThumbEl(url));
+        });
+        editingPhotos.set(id, arr);
+      } catch (err) {
+        alert("Couldn't upload photos: " + err.message);
+      } finally {
+        input.disabled = false;
+        input.value = "";
+      }
+    });
+  });
+
+  // Toggle open/closed
   document.querySelectorAll(".admin-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const row = btn.closest(".admin-row");
-      const id = row.dataset.id;
-      const doc = currentDocs.find((d) => d.id === id);
-      if (doc) openEditModal(id, doc.data());
+      const id = btn.closest(".admin-row").dataset.id;
+      const panel = document.getElementById(`edit-panel-${id}`);
+      if (!panel) return;
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+    });
+  });
+
+  // Cancel just collapses the panel without saving.
+  document.querySelectorAll(".edit-cancel-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const panel = btn.closest(".edit-panel");
+      if (panel) panel.style.display = "none";
+    });
+  });
+
+  // Save writes the edited fields back to Firestore.
+  document.querySelectorAll(".edit-inline-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = form.dataset.id;
+      const saveBtn = form.querySelector('button[type="submit"]');
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+
+      const imageUrls = editingPhotos.get(id) || [];
+
+      const update = {
+        title: form.querySelector(".edit-title").value.trim(),
+        location: form.querySelector(".edit-location").value.trim(),
+        price: Number(form.querySelector(".edit-price").value || 0),
+        description: form.querySelector(".edit-description").value.trim(),
+        imageUrls,
+        ownerName: form.querySelector(".edit-ownerName").value.trim(),
+        ownerContact: form.querySelector(".edit-ownerContact").value.trim()
+      };
+
+      try {
+        await db.collection("propertiess").doc(id).update(update);
+        loadProperties(); // re-render; panel returns to closed state
+      } catch (err) {
+        console.error(err);
+        alert("Couldn't save changes: " + err.message);
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save Changes";
+      }
     });
   });
 }
 
-/* ---------------- Boot ---------------- */
+/* ------------------------------------------------------ */
 
 auth.onAuthStateChanged((user) => {
   if (!user) {
@@ -485,10 +454,7 @@ auth.onAuthStateChanged((user) => {
       return;
     }
     statusBox.innerHTML = "";
-    loadDashboardCounts();
-    loadTopLists();
-    renderTabs();
-    resetAndLoadList();
+    loadProperties();
   }).catch((err) => {
     console.error(err);
     statusBox.innerHTML = `<p class="empty-state">Couldn't verify admin access: ${err.message}</p>`;
