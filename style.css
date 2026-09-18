@@ -42,89 +42,6 @@ img { max-width: 100%; display: block; }
 .nav-actions { display: flex; align-items: center; gap: 20px; font-size: 14.5px; }
 .nav-action-btn { background: none; border: none; cursor: pointer; font: inherit; color: inherit; padding: 0; }
 
-
-/* ---------- Edit Listing Modal (append to style.css) ---------- */
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 16px;
-}
-
-.modal-box {
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modal-box h2 {
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.modal-box label {
-  display: block;
-  margin-bottom: 12px;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.modal-box input,
-.modal-box textarea {
-  width: 100%;
-  margin-top: 4px;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-weight: normal;
-  font-size: 14px;
-  box-sizing: border-box;
-  font-family: inherit;
-}
-
-.modal-box textarea {
-  resize: vertical;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.admin-edit-btn {
-  /* uses .btn-secondary styling already defined elsewhere */
-}
-
-.admin-search-input {
-  display: block;
-  width: 100%;
-  max-width: 400px;
-  margin: 16px 0;
-  padding: 10px 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.admin-load-more-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-}
-
 /* ---------- Mobile nav toggle ---------- */
 .nav-toggle {
     display: none; flex-direction: column; justify-content: center; gap: 5px;
@@ -224,6 +141,30 @@ img { max-width: 100%; display: block; }
 .admin-row-status.status-rejected { color: #b42323; background: #fdeaea; }
 .admin-toggle-btn { width: auto; padding: 8px 18px; white-space: nowrap; }
 .admin-poster { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+.cover-picker { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.cover-picker-thumb { width: 44px; height: 34px; object-fit: cover; border-radius: 5px; cursor: pointer; opacity: 0.55; border: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
+.cover-picker-thumb:hover { opacity: 0.9; }
+.cover-picker-thumb.active { opacity: 1; border-color: var(--pink); }
+
+/* ---------- Inline edit panel (admin) ---------- */
+.admin-row-wrapper { display: flex; flex-direction: column; }
+.edit-panel {
+    background: #fbfbfd; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-top: 8px;
+}
+.edit-panel .form-row { margin-bottom: 12px; }
+.edit-panel textarea { font-family: monospace; font-size: 12.5px; }
+.edit-photo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.edit-photo-thumb-wrap { position: relative; width: 72px; height: 56px; flex-shrink: 0; }
+.edit-photo-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.edit-photo-remove {
+    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%;
+    background: #b42323; color: #fff; border: 2px solid #fff; font-size: 13px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.edit-photo-remove:hover { background: #8f1c1c; }
+.edit-panel input[type="file"] { font-size: 13px; }
+
 .admin-row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .admin-action-btn { width: auto; padding: 8px 18px; white-space: nowrap; }
 .admin-delete-btn { background: none; border: 1.5px solid #f0c4c4; color: #b42323; border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
@@ -393,4 +334,5 @@ img { max-width: 100%; display: block; }
     .hero-content h1 { font-size: 32px; }
     .form-row, .form-row-3 { grid-template-columns: 1fr; }
     .gallery-thumbs img { height: 56px; width: 70px; }
+    .edit-panel .form-row { grid-template-columns: 1fr; }
 }
