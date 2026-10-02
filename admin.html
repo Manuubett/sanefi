@@ -20,6 +20,37 @@
   <div class="dashboard-toplists" id="dashboard-toplists"></div>
   <div class="admin-tabs" id="admin-tabs"></div>
   <div class="admin-list" id="admin-list"></div>
+
+  <div class="ads-section">
+    <h2>Home Page Advertisements</h2>
+    <p class="form-subtitle">Upload promotional banners or popups shown on the home page. Only one active popup is shown at a time (the most recent).</p>
+    <div class="ads-list" id="ads-list"></div>
+
+    <div class="ad-form-card">
+      <h3 style="margin-top:0;">Add New Advert</h3>
+      <form class="listing-form" id="ad-form">
+        <label>Advert Image
+          <input type="file" id="ad-image-input" accept="image/*">
+          <div id="ad-image-preview"></div>
+        </label>
+        <div class="form-row">
+          <label>Placement
+            <select name="placement">
+              <option value="banner">Banner (inline section on home page)</option>
+              <option value="popup">Popup (shown over the page on load)</option>
+            </select>
+          </label>
+          <label>Caption (optional, for your own reference)
+            <input type="text" name="caption" placeholder="e.g. Gatondo Greens Phase 2 - Sept 2026">
+          </label>
+        </div>
+        <label>Link (optional &mdash; where clicking the ad goes)
+          <input type="url" name="link" placeholder="https://wa.me/254724006117 or a property link">
+        </label>
+        <button type="submit" class="btn-primary" style="width:auto; padding:12px 24px;">Add Advert</button>
+      </form>
+    </div>
+  </div>
 </section>
 
 <div id="footer-root"></div>
@@ -28,6 +59,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
+<script src="dev.js"></script>
+<script src="site-lock.js"></script>
 <script src="nav.js"></script>
 <script src="footer.js"></script>
 <script src="property-card.js"></script>
