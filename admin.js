@@ -6,41 +6,23 @@ const dashboardStats = document.getElementById("dashboard-stats");
 const dashboardTopLists = document.getElementById("dashboard-toplists");
 const tabsBox = document.getElementById("admin-tabs");
 const listBox = document.getElementById("admin-list");
+const adsListBox = document.getElementById("ads-list");
 
 let allDocs = [];
 let activeTab = "pending";
-
-// Tracks the working set of photo URLs per listing while its edit panel
-// is open. Nothing hits Firestore until Save is clicked — Remove/Add
-// only mutate this in-memory array and the DOM.
 const editingPhotos = new Map();
 
 function formatPrice(price) {
   return "KSh " + Number(price || 0).toLocaleString();
 }
+function getStatus(doc) { return doc.data().status || "pending"; }
+function getAvailability(doc) { return doc.data().availability || "available"; }
+function isBooked(doc) { return getAvailability(doc) === "booked"; }
 
-function getStatus(doc) {
-  return doc.data().status || "pending";
-}
-
-function getAvailability(doc) {
-  return doc.data().availability || "available";
-}
-
-function isBooked(doc) {
-  return getAvailability(doc) === "booked";
-}
-
-// escapeHTML (from property-card.js) is fine for text nodes, but values
-// placed inside a value="..." attribute also need quotes escaped, or a
-// title/description containing a " would break out of the attribute.
 function escapeAttr(str) {
   return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function adminRowHTML(id, data) {
@@ -65,14 +47,10 @@ function adminRowHTML(id, data) {
   } else {
     actionButtons = `<button class="btn-primary admin-action-btn" data-action="approve">Re-approve</button>`;
   }
-
-  // Edit is available on every row regardless of status — toggles the
-  // inline panel below this row open/closed, rather than a full-screen
-  // modal that would hide the cover picker.
   actionButtons += `<button class="btn-secondary admin-edit-btn" data-action="edit">Edit</button>`;
 
   const photos = data.imageUrls && data.imageUrls.length ? data.imageUrls : [];
-  editingPhotos.set(id, photos.slice()); // seed the working copy for this row
+  editingPhotos.set(id, photos.slice());
   const coverUrl = data.coverImageUrl && photos.includes(data.coverImageUrl) ? data.coverImageUrl : photos[0];
   const coverPickerHTML = photos.length > 1
     ? `<div class="cover-picker" data-id="${id}">
@@ -108,27 +86,15 @@ function adminRowHTML(id, data) {
       <div class="edit-panel" id="edit-panel-${id}" style="display:none;">
         <form class="listing-form edit-inline-form" data-id="${id}">
           <div class="form-row">
-            <label>Title
-              <input type="text" class="edit-title" value="${escapeAttr(data.title || "")}" required>
-            </label>
-            <label>Location
-              <input type="text" class="edit-location" value="${escapeAttr(data.location || "")}">
-            </label>
+            <label>Title <input type="text" class="edit-title" value="${escapeAttr(data.title || "")}" required></label>
+            <label>Location <input type="text" class="edit-location" value="${escapeAttr(data.location || "")}"></label>
           </div>
           <div class="form-row">
-            <label>Price (KSh)
-              <input type="number" class="edit-price" min="0" value="${data.price || 0}">
-            </label>
-            <label>Poster Name
-              <input type="text" class="edit-ownerName" value="${escapeAttr(data.ownerName || "")}">
-            </label>
+            <label>Price (KSh) <input type="number" class="edit-price" min="0" value="${data.price || 0}"></label>
+            <label>Poster Name <input type="text" class="edit-ownerName" value="${escapeAttr(data.ownerName || "")}"></label>
           </div>
-          <label class="full-width">Poster Contact
-            <input type="text" class="edit-ownerContact" value="${escapeAttr(data.ownerContact || "")}">
-          </label>
-          <label class="full-width">Description
-            <textarea class="edit-description" rows="3">${escapeHTML(data.description || "")}</textarea>
-          </label>
+          <label class="full-width">Poster Contact <input type="text" class="edit-ownerContact" value="${escapeAttr(data.ownerContact || "")}"></label>
+          <label class="full-width">Description <textarea class="edit-description" rows="3">${escapeHTML(data.description || "")}</textarea></label>
           <div class="full-width">
             <label>Photos</label>
             <div class="edit-photo-grid" id="edit-photos-${id}">${photoThumbsHTML}</div>
@@ -164,25 +130,18 @@ function renderDashboard() {
       .filter((doc) => Number(doc.data()[field] || 0) > 0)
       .sort((a, b) => Number(b.data()[field] || 0) - Number(a.data()[field] || 0))
       .slice(0, 5);
-    const rows = sorted.length
+    return sorted.length
       ? sorted.map((doc) => `
           <div class="top-list-row">
             <span class="tl-title">${escapeHTML(doc.data().title || "Untitled listing")}</span>
             <span class="tl-count">${Number(doc.data()[field] || 0)} ${label}</span>
           </div>`).join("")
       : `<p class="empty-state" style="padding:10px 0;">${emptyLabel}</p>`;
-    return rows;
   };
 
   dashboardTopLists.innerHTML = `
-    <div class="top-list-card">
-      <h4>&#10084; Most Saved</h4>
-      ${topByField("savesCount", "saves", "No saves yet.")}
-    </div>
-    <div class="top-list-card">
-      <h4>&#128065; Most Viewed</h4>
-      ${topByField("views", "views", "No views yet.")}
-    </div>`;
+    <div class="top-list-card"><h4>&#10084; Most Saved</h4>${topByField("savesCount", "saves", "No saves yet.")}</div>
+    <div class="top-list-card"><h4>&#128065; Most Viewed</h4>${topByField("views", "views", "No views yet.")}</div>`;
 }
 
 function renderTabs() {
@@ -192,25 +151,16 @@ function renderTabs() {
     else if (counts[getStatus(doc)] !== undefined) counts[getStatus(doc)]++;
   });
   const tabs = [
-    { key: "pending", label: "Pending" },
-    { key: "approved", label: "Approved" },
-    { key: "booked", label: "Booked" },
-    { key: "rejected", label: "Rejected" },
-    { key: "all", label: "All" }
+    { key: "pending", label: "Pending" }, { key: "approved", label: "Approved" },
+    { key: "booked", label: "Booked" }, { key: "rejected", label: "Rejected" }, { key: "all", label: "All" }
   ];
-  tabsBox.innerHTML = tabs
-    .map((t) => `
+  tabsBox.innerHTML = tabs.map((t) => `
       <button class="admin-tab ${activeTab === t.key ? "active" : ""}" data-tab="${t.key}">
         ${t.label}${t.key !== "all" ? ` (${counts[t.key] || 0})` : ` (${allDocs.length})`}
-      </button>`)
-    .join("");
+      </button>`).join("");
 
   tabsBox.querySelectorAll(".admin-tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      activeTab = btn.dataset.tab;
-      renderTabs();
-      renderList();
-    });
+    btn.addEventListener("click", () => { activeTab = btn.dataset.tab; renderTabs(); renderList(); });
   });
 }
 
@@ -218,7 +168,7 @@ function renderList() {
   const filtered = allDocs.filter((doc) => {
     if (activeTab === "all") return true;
     if (activeTab === "booked") return isBooked(doc);
-    if (isBooked(doc)) return false; // booked items only live in the Booked tab
+    if (isBooked(doc)) return false;
     return getStatus(doc) === activeTab;
   });
 
@@ -233,9 +183,7 @@ function renderList() {
 
 function loadProperties() {
   listBox.innerHTML = `<p class="empty-state">Loading properties&hellip;</p>`;
-  db.collection("propertiess")
-    .orderBy("createdAt", "desc")
-    .get()
+  db.collection("propertiess").orderBy("createdAt", "desc").get()
     .then((snapshot) => {
       allDocs = snapshot.docs;
       renderDashboard();
@@ -253,16 +201,9 @@ function attachActionHandlers() {
     btn.addEventListener("click", async () => {
       const id = btn.closest(".admin-row").dataset.id;
       const currentlyFeatured = btn.dataset.featured === "true";
-      btn.disabled = true;
-      btn.textContent = "Saving...";
-      try {
-        await db.collection("propertiess").doc(id).update({ featured: !currentlyFeatured });
-        loadProperties();
-      } catch (err) {
-        console.error(err);
-        alert("Couldn't update this listing: " + err.message);
-        loadProperties();
-      }
+      btn.disabled = true; btn.textContent = "Saving...";
+      try { await db.collection("propertiess").doc(id).update({ featured: !currentlyFeatured }); loadProperties(); }
+      catch (err) { alert("Couldn't update this listing: " + err.message); loadProperties(); }
     });
   });
 
@@ -277,17 +218,9 @@ function attachActionHandlers() {
       else if (action === "book") update = { availability: "booked" };
       else if (action === "unbook") update = { availability: "available" };
       if (!update) return;
-
-      btn.disabled = true;
-      btn.textContent = "Saving...";
-      try {
-        await db.collection("propertiess").doc(id).update(update);
-        loadProperties();
-      } catch (err) {
-        console.error(err);
-        alert("Couldn't update this listing: " + err.message);
-        loadProperties();
-      }
+      btn.disabled = true; btn.textContent = "Saving...";
+      try { await db.collection("propertiess").doc(id).update(update); loadProperties(); }
+      catch (err) { alert("Couldn't update this listing: " + err.message); loadProperties(); }
     });
   });
 
@@ -295,12 +228,8 @@ function attachActionHandlers() {
     thumb.addEventListener("click", async () => {
       const id = thumb.closest(".cover-picker").dataset.id;
       const url = thumb.dataset.url;
-      try {
-        await db.collection("propertiess").doc(id).update({ coverImageUrl: url });
-        loadProperties();
-      } catch (err) {
-        alert("Couldn't set cover photo: " + err.message);
-      }
+      try { await db.collection("propertiess").doc(id).update({ coverImageUrl: url }); loadProperties(); }
+      catch (err) { alert("Couldn't set cover photo: " + err.message); }
     });
   });
 
@@ -310,21 +239,12 @@ function attachActionHandlers() {
       const id = row.dataset.id;
       const title = row.querySelector("strong")?.textContent || "this listing";
       if (!confirm(`Delete "${title}" permanently? This can't be undone.`)) return;
-
       btn.disabled = true;
-      try {
-        await db.collection("propertiess").doc(id).delete();
-        loadProperties();
-      } catch (err) {
-        console.error(err);
-        alert("Couldn't delete this listing: " + err.message);
-        loadProperties();
-      }
+      try { await db.collection("propertiess").doc(id).delete(); loadProperties(); }
+      catch (err) { alert("Couldn't delete this listing: " + err.message); loadProperties(); }
     });
   });
 }
-
-/* ---------------- Inline Edit Panel ---------------- */
 
 function removePhotoFromWorkingSet(wrapEl) {
   const grid = wrapEl.closest(".edit-photo-grid");
@@ -346,41 +266,30 @@ function buildPhotoThumbEl(url) {
 }
 
 function attachEditHandlers() {
-  // Remove a photo from the working set (no Firestore write until Save).
   document.querySelectorAll(".edit-photo-remove").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const wrap = btn.closest(".edit-photo-thumb-wrap");
-      removePhotoFromWorkingSet(wrap);
-    });
+    btn.addEventListener("click", () => removePhotoFromWorkingSet(btn.closest(".edit-photo-thumb-wrap")));
   });
 
-  // Upload new photos via Cloudinary and add them to the working set.
   document.querySelectorAll(".edit-photo-input").forEach((input) => {
     input.addEventListener("change", async () => {
       const files = input.files;
       if (!files || !files.length) return;
       const grid = input.closest(".edit-panel").querySelector(".edit-photo-grid");
       const id = grid.id.replace("edit-photos-", "");
-
       input.disabled = true;
       try {
         const urls = await uploadAllToCloudinary(files);
         const arr = editingPhotos.get(id) || [];
-        urls.forEach((url) => {
-          arr.push(url);
-          grid.appendChild(buildPhotoThumbEl(url));
-        });
+        urls.forEach((url) => { arr.push(url); grid.appendChild(buildPhotoThumbEl(url)); });
         editingPhotos.set(id, arr);
       } catch (err) {
         alert("Couldn't upload photos: " + err.message);
       } finally {
-        input.disabled = false;
-        input.value = "";
+        input.disabled = false; input.value = "";
       }
     });
   });
 
-  // Toggle open/closed
   document.querySelectorAll(".admin-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.closest(".admin-row").dataset.id;
@@ -390,7 +299,6 @@ function attachEditHandlers() {
     });
   });
 
-  // Cancel just collapses the panel without saving.
   document.querySelectorAll(".edit-cancel-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const panel = btn.closest(".edit-panel");
@@ -398,17 +306,14 @@ function attachEditHandlers() {
     });
   });
 
-  // Save writes the edited fields back to Firestore.
   document.querySelectorAll(".edit-inline-form").forEach((form) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const id = form.dataset.id;
       const saveBtn = form.querySelector('button[type="submit"]');
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Saving...";
+      saveBtn.disabled = true; saveBtn.textContent = "Saving...";
 
       const imageUrls = editingPhotos.get(id) || [];
-
       const update = {
         title: form.querySelector(".edit-title").value.trim(),
         location: form.querySelector(".edit-location").value.trim(),
@@ -419,42 +324,148 @@ function attachEditHandlers() {
         ownerContact: form.querySelector(".edit-ownerContact").value.trim()
       };
 
-      try {
-        await db.collection("propertiess").doc(id).update(update);
-        loadProperties(); // re-render; panel returns to closed state
-      } catch (err) {
-        console.error(err);
+      try { await db.collection("propertiess").doc(id).update(update); loadProperties(); }
+      catch (err) {
         alert("Couldn't save changes: " + err.message);
-        saveBtn.disabled = false;
-        saveBtn.textContent = "Save Changes";
+        saveBtn.disabled = false; saveBtn.textContent = "Save Changes";
       }
     });
   });
 }
 
-/* ------------------------------------------------------ */
+/* ================= ADS MANAGEMENT ================= */
+
+let adsWorkingImage = null; // Cloudinary URL staged for the "add ad" form
+
+function adRowHTML(id, data) {
+  const active = data.active !== false;
+  return `
+    <div class="ad-row" data-id="${id}">
+      <img class="ad-row-thumb" src="${data.imageUrl || 'https://placehold.co/90x60?text=No+Image'}" alt="">
+      <div class="ad-row-info">
+        <strong>${escapeHTML(data.caption || "Untitled advert")}</strong>
+        <span class="ad-placement-pill">${data.placement === "popup" ? "Popup" : "Banner"}</span>
+        ${data.link ? `<span>Links to: ${escapeHTML(data.link)}</span>` : ""}
+      </div>
+      <span class="ad-active-pill ${active ? "is-active" : "is-inactive"}">${active ? "Active" : "Inactive"}</span>
+      <div class="admin-row-actions">
+        <button class="btn-secondary ad-toggle-btn" data-id="${id}" data-active="${active}" style="width:auto; padding:8px 16px;">${active ? "Deactivate" : "Activate"}</button>
+        <button class="admin-delete-btn" data-id="${id}" data-action="delete-ad" title="Delete permanently">&#128465;</button>
+      </div>
+    </div>`;
+}
+
+function loadAds() {
+  if (!adsListBox) return;
+  adsListBox.innerHTML = `<p class="empty-state">Loading adverts&hellip;</p>`;
+  db.collection("ads").orderBy("createdAt", "desc").get()
+    .then((snapshot) => {
+      if (snapshot.empty) {
+        adsListBox.innerHTML = `<p class="empty-state">No adverts yet &mdash; add one below.</p>`;
+        return;
+      }
+      adsListBox.innerHTML = snapshot.docs.map((doc) => adRowHTML(doc.id, doc.data())).join("");
+      attachAdHandlers();
+    })
+    .catch((err) => {
+      console.error(err);
+      adsListBox.innerHTML = `<p class="empty-state">Couldn't load adverts: ${err.message}</p>`;
+    });
+}
+
+function attachAdHandlers() {
+  document.querySelectorAll(".ad-toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const currentlyActive = btn.dataset.active === "true";
+      btn.disabled = true;
+      try { await db.collection("ads").doc(id).update({ active: !currentlyActive }); loadAds(); }
+      catch (err) { alert("Couldn't update advert: " + err.message); btn.disabled = false; }
+    });
+  });
+
+  document.querySelectorAll('[data-action="delete-ad"]').forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Delete this advert permanently?")) return;
+      const id = btn.dataset.id;
+      btn.disabled = true;
+      try { await db.collection("ads").doc(id).delete(); loadAds(); }
+      catch (err) { alert("Couldn't delete advert: " + err.message); btn.disabled = false; }
+    });
+  });
+}
+
+function setupAdForm() {
+  const fileInput = document.getElementById("ad-image-input");
+  const preview = document.getElementById("ad-image-preview");
+  const form = document.getElementById("ad-form");
+  if (!fileInput || !form) return;
+
+  fileInput.addEventListener("change", async () => {
+    const files = fileInput.files;
+    if (!files || !files.length) return;
+    preview.textContent = "Uploading...";
+    try {
+      const urls = await uploadAllToCloudinary(files);
+      adsWorkingImage = urls[0];
+      preview.innerHTML = `<img src="${adsWorkingImage}" style="height:70px; border-radius:6px; margin-top:8px;">`;
+    } catch (err) {
+      preview.textContent = "Upload failed: " + err.message;
+    }
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!adsWorkingImage) {
+      alert("Please upload an image for the advert first.");
+      return;
+    }
+    const data = new FormData(form);
+    const saveBtn = form.querySelector('button[type="submit"]');
+    saveBtn.disabled = true; saveBtn.textContent = "Saving...";
+
+    try {
+      await db.collection("ads").add({
+        imageUrl: adsWorkingImage,
+        caption: data.get("caption") || "",
+        link: data.get("link") || "",
+        placement: data.get("placement"),
+        active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      form.reset();
+      preview.innerHTML = "";
+      adsWorkingImage = null;
+      loadAds();
+    } catch (err) {
+      alert("Couldn't save advert: " + err.message);
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = "Add Advert";
+    }
+  });
+}
+
+/* ==================================================== */
 
 auth.onAuthStateChanged((user) => {
   if (!user) {
     statusBox.innerHTML = `<p class="empty-state">Please <a href="login.html">log in</a> to access the admin area.</p>`;
-    dashboardStats.innerHTML = "";
-    dashboardTopLists.innerHTML = "";
-    tabsBox.innerHTML = "";
-    listBox.innerHTML = "";
+    dashboardStats.innerHTML = ""; dashboardTopLists.innerHTML = ""; tabsBox.innerHTML = ""; listBox.innerHTML = "";
+    if (adsListBox) adsListBox.innerHTML = "";
     return;
   }
 
   db.collection("admins").doc(user.uid).get().then((adminDoc) => {
     if (!adminDoc.exists) {
       statusBox.innerHTML = `<p class="empty-state">You're signed in as ${user.email}, but this account doesn't have admin access.</p>`;
-      dashboardStats.innerHTML = "";
-      dashboardTopLists.innerHTML = "";
-      tabsBox.innerHTML = "";
-      listBox.innerHTML = "";
+      dashboardStats.innerHTML = ""; dashboardTopLists.innerHTML = ""; tabsBox.innerHTML = ""; listBox.innerHTML = "";
+      if (adsListBox) adsListBox.innerHTML = "";
       return;
     }
     statusBox.innerHTML = "";
     loadProperties();
+    loadAds();
+    setupAdForm();
   }).catch((err) => {
     console.error(err);
     statusBox.innerHTML = `<p class="empty-state">Couldn't verify admin access: ${err.message}</p>`;
