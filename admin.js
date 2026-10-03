@@ -25,6 +25,16 @@ function escapeAttr(str) {
     .replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Only allow http(s), tel and mailto links. "wa.me/254..." gets https:// added.
+// Blocks javascript:, data: and other unsafe schemes.
+function normalizeLink(url) {
+  const u = String(url || "").trim();
+  if (!u) return "";
+  if (/^(https?:|tel:|mailto:)/i.test(u)) return u;
+  if (/^[a-z][a-z0-9+.\-]*:/i.test(u)) return "";
+  return "https://" + u.replace(/^\/+/, "");
+}
+
 function adminRowHTML(id, data) {
   const status = data.status || "pending";
   const booked = (data.availability || "available") === "booked";
@@ -125,6 +135,13 @@ function renderDashboard() {
     <div class="stat-card"><div class="stat-number">${counts.booked}</div><div class="stat-label">Booked</div></div>
     <div class="stat-card"><div class="stat-number">${counts.rejected}</div><div class="stat-label">Rejected</div></div>`;
 
+  // sidebar badge: number of listings waiting for review
+  const pendingBadge = document.getElementById("nav-pending-badge");
+  if (pendingBadge) {
+    pendingBadge.textContent = counts.pending;
+    pendingBadge.style.display = counts.pending ? "inline-block" : "none";
+  }
+
   const topByField = (field, label, emptyLabel) => {
     const sorted = [...allDocs]
       .filter((doc) => Number(doc.data()[field] || 0) > 0)
@@ -196,8 +213,10 @@ function loadProperties() {
     });
 }
 
+// NOTE: every selector below is scoped to listBox so these handlers never
+// attach to buttons that belong to the adverts list (which share class names).
 function attachActionHandlers() {
-  document.querySelectorAll(".admin-toggle-btn").forEach((btn) => {
+  listBox.querySelectorAll(".admin-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.closest(".admin-row").dataset.id;
       const currentlyFeatured = btn.dataset.featured === "true";
@@ -207,7 +226,7 @@ function attachActionHandlers() {
     });
   });
 
-  document.querySelectorAll(".admin-action-btn").forEach((btn) => {
+  listBox.querySelectorAll(".admin-action-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.closest(".admin-row").dataset.id;
       const action = btn.dataset.action;
@@ -224,7 +243,7 @@ function attachActionHandlers() {
     });
   });
 
-  document.querySelectorAll(".cover-picker-thumb").forEach((thumb) => {
+  listBox.querySelectorAll(".cover-picker-thumb").forEach((thumb) => {
     thumb.addEventListener("click", async () => {
       const id = thumb.closest(".cover-picker").dataset.id;
       const url = thumb.dataset.url;
@@ -233,7 +252,7 @@ function attachActionHandlers() {
     });
   });
 
-  document.querySelectorAll(".admin-delete-btn").forEach((btn) => {
+  listBox.querySelectorAll(".admin-delete-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const row = btn.closest(".admin-row");
       const id = row.dataset.id;
@@ -266,11 +285,11 @@ function buildPhotoThumbEl(url) {
 }
 
 function attachEditHandlers() {
-  document.querySelectorAll(".edit-photo-remove").forEach((btn) => {
+  listBox.querySelectorAll(".edit-photo-remove").forEach((btn) => {
     btn.addEventListener("click", () => removePhotoFromWorkingSet(btn.closest(".edit-photo-thumb-wrap")));
   });
 
-  document.querySelectorAll(".edit-photo-input").forEach((input) => {
+  listBox.querySelectorAll(".edit-photo-input").forEach((input) => {
     input.addEventListener("change", async () => {
       const files = input.files;
       if (!files || !files.length) return;
@@ -290,7 +309,7 @@ function attachEditHandlers() {
     });
   });
 
-  document.querySelectorAll(".admin-edit-btn").forEach((btn) => {
+  listBox.querySelectorAll(".admin-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.closest(".admin-row").dataset.id;
       const panel = document.getElementById(`edit-panel-${id}`);
@@ -299,14 +318,14 @@ function attachEditHandlers() {
     });
   });
 
-  document.querySelectorAll(".edit-cancel-btn").forEach((btn) => {
+  listBox.querySelectorAll(".edit-cancel-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const panel = btn.closest(".edit-panel");
       if (panel) panel.style.display = "none";
     });
   });
 
-  document.querySelectorAll(".edit-inline-form").forEach((form) => {
+  listBox.querySelectorAll(".edit-inline-form").forEach((form) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const id = form.dataset.id;
@@ -341,7 +360,7 @@ function adRowHTML(id, data) {
   const active = data.active !== false;
   return `
     <div class="ad-row" data-id="${id}">
-      <img class="ad-row-thumb" src="${data.imageUrl || 'https://placehold.co/90x60?text=No+Image'}" alt="">
+      <img class="ad-row-thumb" src="${escapeAttr(data.imageUrl) || 'https://placehold.co/90x60?text=No+Image'}" alt="">
       <div class="ad-row-info">
         <strong>${escapeHTML(data.caption || "Untitled advert")}</strong>
         <span class="ad-placement-pill">${data.placement === "popup" ? "Popup" : "Banner"}</span>
@@ -374,7 +393,7 @@ function loadAds() {
 }
 
 function attachAdHandlers() {
-  document.querySelectorAll(".ad-toggle-btn").forEach((btn) => {
+  adsListBox.querySelectorAll(".ad-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
       const currentlyActive = btn.dataset.active === "true";
@@ -384,7 +403,7 @@ function attachAdHandlers() {
     });
   });
 
-  document.querySelectorAll('[data-action="delete-ad"]').forEach((btn) => {
+  adsListBox.querySelectorAll('[data-action="delete-ad"]').forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!confirm("Delete this advert permanently?")) return;
       const id = btn.dataset.id;
@@ -408,7 +427,7 @@ function setupAdForm() {
     try {
       const urls = await uploadAllToCloudinary(files);
       adsWorkingImage = urls[0];
-      preview.innerHTML = `<img src="${adsWorkingImage}" style="height:70px; border-radius:6px; margin-top:8px;">`;
+      preview.innerHTML = `<img src="${escapeAttr(adsWorkingImage)}" style="height:70px; border-radius:6px; margin-top:8px;">`;
     } catch (err) {
       preview.textContent = "Upload failed: " + err.message;
     }
@@ -421,6 +440,13 @@ function setupAdForm() {
       return;
     }
     const data = new FormData(form);
+    const rawLink = String(data.get("link") || "").trim();
+    const link = normalizeLink(rawLink);
+    if (rawLink && !link) {
+      alert("That link isn't allowed. Please use a normal web address, e.g. https://example.com or wa.me/2547XXXXXXXX");
+      return;
+    }
+
     const saveBtn = form.querySelector('button[type="submit"]');
     saveBtn.disabled = true; saveBtn.textContent = "Saving...";
 
@@ -428,7 +454,7 @@ function setupAdForm() {
       await db.collection("ads").add({
         imageUrl: adsWorkingImage,
         caption: data.get("caption") || "",
-        link: data.get("link") || "",
+        link,
         placement: data.get("placement"),
         active: true,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
