@@ -9,49 +9,96 @@
 <body>
 <div id="navbar-root"></div>
 
-<section class="page-header">
-  <h1>Admin &mdash; Review Listings</h1>
-  <p class="form-subtitle">Approve or reject new listings before they go live, manage featured properties, and remove anything that shouldn't be on the site.</p>
-</section>
+<div class="admin-layout">
 
-<section class="featured">
-  <div id="admin-status"></div>
-  <div class="dashboard-stats" id="dashboard-stats"></div>
-  <div class="dashboard-toplists" id="dashboard-toplists"></div>
-  <div class="admin-tabs" id="admin-tabs"></div>
-  <div class="admin-list" id="admin-list"></div>
+  <!-- ===== Sidebar ===== -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar-head">
+      <span class="admin-sidebar-title">Admin Panel</span>
+      <button type="button" class="admin-sidebar-close" id="admin-sidebar-close" aria-label="Close menu">&times;</button>
+    </div>
 
-  <div class="ads-section">
-    <h2>Home Page Advertisements</h2>
-    <p class="form-subtitle">Upload promotional banners or popups shown on the home page. Only one active popup is shown at a time (the most recent).</p>
-    <div class="ads-list" id="ads-list"></div>
+    <nav class="admin-nav">
+      <a href="#overview" class="admin-nav-link" data-panel="overview"><span class="admin-nav-icon">&#128202;</span>Overview</a>
+      <a href="#listings" class="admin-nav-link" data-panel="listings"><span class="admin-nav-icon">&#127968;</span>Listings<span class="admin-nav-badge" id="nav-pending-badge" style="display:none;">0</span></a>
+      <a href="#ads" class="admin-nav-link" data-panel="ads"><span class="admin-nav-icon">&#128226;</span>Adverts</a>
+    </nav>
 
-    <div class="ad-form-card">
-      <h3 style="margin-top:0;">Add New Advert</h3>
-      <form class="listing-form" id="ad-form">
-        <label>Advert Image
-          <input type="file" id="ad-image-input" accept="image/*">
-          <div id="ad-image-preview"></div>
-        </label>
-        <div class="form-row">
-          <label>Placement
-            <select name="placement">
-              <option value="banner">Banner (inline section on home page)</option>
-              <option value="popup">Popup (shown over the page on load)</option>
-            </select>
-          </label>
-          <label>Caption (optional, for your own reference)
-            <input type="text" name="caption" placeholder="e.g. Gatondo Greens Phase 2 - Sept 2026">
-          </label>
+    <div class="admin-sidebar-foot">
+      <a href="index.html" class="admin-nav-link"><span class="admin-nav-icon">&#127760;</span>View site</a>
+      <button type="button" class="admin-nav-link" id="admin-logout"><span class="admin-nav-icon">&#128682;</span>Log out</button>
+    </div>
+  </aside>
+  <div class="admin-overlay" id="admin-overlay"></div>
+
+  <!-- ===== Main area ===== -->
+  <div class="admin-main">
+    <div class="admin-mobilebar">
+      <button type="button" class="admin-menu-btn" id="admin-menu-btn">&#9776; Menu</button>
+      <span class="admin-mobilebar-title" id="admin-mobilebar-title">Overview</span>
+    </div>
+
+    <div class="admin-content">
+      <div id="admin-status"></div>
+
+      <!-- Overview -->
+      <section class="admin-panel" id="panel-overview">
+        <div class="admin-panel-head">
+          <h1>Overview</h1>
+          <p class="form-subtitle">A quick look at your listings and what visitors are saving and viewing.</p>
         </div>
-        <label>Link (optional &mdash; where clicking the ad goes)
-          <input type="url" name="link" placeholder="https://wa.me/254724006117 or a property link">
-        </label>
-        <button type="submit" class="btn-primary" style="width:auto; padding:12px 24px;">Add Advert</button>
-      </form>
+        <div class="dashboard-stats" id="dashboard-stats"></div>
+        <div class="dashboard-toplists" id="dashboard-toplists"></div>
+      </section>
+
+      <!-- Listings -->
+      <section class="admin-panel" id="panel-listings">
+        <div class="admin-panel-head">
+          <h1>Listings</h1>
+          <p class="form-subtitle">Approve or reject new listings before they go live, manage featured properties, and remove anything that shouldn't be on the site.</p>
+        </div>
+        <div class="admin-tabs" id="admin-tabs"></div>
+        <div class="admin-list" id="admin-list"></div>
+      </section>
+
+      <!-- Adverts -->
+      <section class="admin-panel" id="panel-ads">
+        <div class="ads-section">
+          <div class="admin-panel-head">
+            <h1>Home Page Advertisements</h1>
+            <p class="form-subtitle">Banner ads scroll in the slider in the middle of the home page, and visitors can tap one to enlarge it. If you have several active popups, one is picked at random each visit.</p>
+          </div>
+          <div class="ads-list" id="ads-list"></div>
+
+          <div class="ad-form-card">
+            <h3 style="margin-top:0;">Add New Advert</h3>
+            <form class="listing-form" id="ad-form">
+              <label>Advert Image
+                <input type="file" id="ad-image-input" accept="image/*">
+                <div id="ad-image-preview"></div>
+              </label>
+              <div class="form-row">
+                <label>Placement
+                  <select name="placement">
+                    <option value="banner">Banner (scrolling slider on the home page)</option>
+                    <option value="popup">Popup (shown over the page on load)</option>
+                  </select>
+                </label>
+                <label>Caption (optional, shown when the ad is enlarged)
+                  <input type="text" name="caption" placeholder="e.g. Gatondo Greens Phase 2 - Sept 2026">
+                </label>
+              </div>
+              <label>Link (optional &mdash; where the ad's Visit button goes)
+                <input type="text" name="link" placeholder="https://wa.me/254724006117 or a property link">
+              </label>
+              <button type="submit" class="btn-primary" style="width:auto; padding:12px 24px;">Add Advert</button>
+            </form>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
-</section>
+</div>
 
 <div id="footer-root"></div>
 
@@ -66,5 +113,6 @@
 <script src="property-card.js"></script>
 <script src="cloudinary.js"></script>
 <script src="admin.js"></script>
+<script src="admin-nav.js"></script>
 </body>
 </html>
