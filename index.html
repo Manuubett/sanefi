@@ -36,17 +36,20 @@
 <div id="navbar-root"></div>
 
 <section class="hero">
+
+  <!-- Welcome video: fills the right half of the hero (behaviour in welcome.js) -->
+  <div class="hero-video" id="hero-video">
+    <video data-src="welcome.mp4" muted loop playsinline preload="metadata" poster="welcome-poster.jpg"></video>
+    <div class="hero-video-spinner"></div>
+    <button type="button" class="hero-video-sound">&#128263; Tap for sound</button>
+    <button type="button" class="hero-video-play" aria-label="Play video">&#9654;</button>
+    <button type="button" class="hero-video-hide" aria-label="Hide video">&times;</button>
+  </div>
+
   <div class="hero-content">
     <h1>Find Your Next Home<br>with us sanefi</h1>
     <p>Discover the best rental houses, apartments, bedsitters and land from trusted landlords and agents across Kenya and Mt. Kenya region &mdash; brought to you by Sanefi Consult.</p>
-     <p>Discover the best rental houses, ... brought to you by Sanefi Consult.</p>
 
-    <button type="button" class="welcome-btn" id="welcome-btn">
-      <span class="welcome-btn-icon">&#9654;</span>
-      Watch our welcome
-    </button>
-
-    <form class="search-bar" id="hero-search">
     <form class="search-bar" id="hero-search">
       <div class="search-field">
         <span class="field-icon">&#128205;</span>
@@ -107,9 +110,6 @@
   </div>
 </section>
 
-<!-- Advert banner (filled in by ads.js; stays empty if there is no active banner) -->
-<section class="ad-banner-section" id="ad-banner-section"></section>
-
 <section class="featured">
   <div class="section-heading">
     <div>
@@ -123,6 +123,9 @@
     <p class="empty-state">Loading properties&hellip;</p>
   </div>
 </section>
+
+<!-- Advert slider (filled in by ads.js; hidden if there are no active banners) -->
+<section class="ad-banner-section" id="ad-banner-section"></section>
 
 <section class="perks">
   <div class="perk"><span class="perk-icon">&#8962;</span><h4>Verified Listings</h4><p>Get genuine and up-to-date property listings.</p></div>
@@ -148,6 +151,6 @@
 <script src="property-card.js"></script>
 <script src="home.js"></script>
 <script src="ads.js"></script>
-<script src="welcome.js"></script>  
+<script src="welcome.js"></script>
 </body>
 </html>
