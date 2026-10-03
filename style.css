@@ -461,51 +461,65 @@ img { max-width: 100%; display: block; }
     .edit-panel .form-row { grid-template-columns: 1fr; }
 }
 
-/* ---------- Welcome video (hero button + pop-up player) ---------- */
-.welcome-btn {
-    display: inline-flex; align-items: center; gap: 12px; margin: -12px 0 28px;
-    background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.55); color: #fff;
-    border-radius: 999px; padding: 7px 20px 7px 8px; font: inherit; font-size: 14.5px; font-weight: 600;
-    cursor: pointer; backdrop-filter: blur(4px); transition: background .2s ease, border-color .2s ease;
+/* ---------- Hero welcome video: fills the right half of the hero ---------- */
+.hero { overflow: hidden; }
+.hero-content { position: relative; z-index: 2; pointer-events: none; }   /* text + search bar sit above the video */
+.hero-content h1, .hero-content p, .hero-content .search-bar { pointer-events: auto; }
+.hero-content h1 { width: fit-content; }
+
+.hero-video {
+    --ratio: 1.7778;          /* updated from the real video size by welcome.js */
+    --video-fit: cover;       /* cover = fills the whole area (may trim the edges); contain = shows every pixel */
+    position: absolute; z-index: 1; top: 0; right: 0; bottom: 0; width: 50%;
+    background: #0b1626; overflow: hidden;
 }
-.welcome-btn:hover { background: rgba(255,255,255,.26); border-color: #fff; }
-.welcome-btn-icon {
-    width: 38px; height: 38px; border-radius: 50%; background: var(--pink); color: #fff;
-    display: flex; align-items: center; justify-content: center; font-size: 13px; padding-left: 3px;
-    animation: welcomePulse 2.2s ease-out infinite;
-}
-@keyframes welcomePulse {
-    0% { box-shadow: 0 0 0 0 rgba(230,0,126,.55); }
-    70% { box-shadow: 0 0 0 12px rgba(230,0,126,0); }
-    100% { box-shadow: 0 0 0 0 rgba(230,0,126,0); }
+.hero-video video { display: block; width: 100%; height: 100%; object-fit: var(--video-fit); background: #0b1626; }
+/* soft fade on the left edge so the video blends into the hero photo */
+.hero-video::after {
+    content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(to right, rgba(16,35,63,.9), rgba(16,35,63,0) 30%);
 }
 
-.video-modal {
-    position: fixed; inset: 0; z-index: 700; background: rgba(8,16,30,.88); backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center; padding: 20px; animation: adFade .25s ease;
+.hero-video-spinner { position: absolute; inset: 0; z-index: 2; display: none; align-items: center; justify-content: center; pointer-events: none; }
+.hero-video.is-loading .hero-video-spinner { display: flex; }
+.hero-video-spinner::after {
+    content: ""; width: 38px; height: 38px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; animation: heroSpin .8s linear infinite;
 }
-.video-modal-box {
-    width: min(94vw, 880px); background: #000; border-radius: 14px; overflow: hidden;
-    box-shadow: 0 24px 70px rgba(0,0,0,.5); animation: adPop .3s cubic-bezier(.22,.61,.36,1);
+@keyframes heroSpin { to { transform: rotate(360deg); } }
+
+.hero-video-sound {
+    position: absolute; top: 14px; right: 56px; z-index: 3; border: none; cursor: pointer;
+    background: rgba(16,35,63,.85); color: #fff; font: inherit; font-size: 13px; font-weight: 600;
+    padding: 8px 15px; border-radius: 999px; backdrop-filter: blur(4px); animation: heroNudge 2.4s ease-in-out infinite;
 }
-.video-modal-player { display: block; width: 100%; max-height: 72vh; background: #000; }
-.video-modal-foot {
-    display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    padding: 12px 16px; background: #fff; font-weight: 700; font-size: 14.5px; color: var(--ink);
+.hero-video-sound:hover { background: var(--pink); }
+.hero-video.is-sound .hero-video-sound { display: none; }
+@keyframes heroNudge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+.hero-video-hide {
+    position: absolute; top: 14px; right: 14px; z-index: 3; width: 32px; height: 32px; border: none; border-radius: 50%;
+    background: rgba(16,35,63,.85); color: #fff; font-size: 19px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
 }
-.video-modal-cta { background: var(--pink); color: #fff; font-weight: 600; font-size: 13.5px; padding: 9px 18px; border-radius: 999px; white-space: nowrap; }
-.video-modal-cta:hover { background: var(--pink-dark); }
-.video-modal-error { color: #fff; text-align: center; padding: 60px 20px; margin: 0; }
-.video-modal-close {
-    position: absolute; top: 16px; right: 16px; z-index: 2; width: 40px; height: 40px; border: none; border-radius: 50%;
-    background: rgba(255,255,255,.95); color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,.35);
+.hero-video-hide:hover { background: var(--pink); }
+
+.hero-video-play {
+    position: absolute; inset: 0; z-index: 2; display: none; align-items: center; justify-content: center;
+    border: none; background: rgba(8,16,30,.35); color: #fff; font-size: 34px; cursor: pointer; padding-left: 6px;
 }
-.video-modal-close:hover { background: var(--pink); color: #fff; }
-@media (max-width: 640px) {
-    .video-modal { padding: 12px; }
-    .video-modal-foot { font-size: 13px; }
+.hero-video.is-paused:not(.has-controls) .hero-video-play { display: flex; }
+
+/* tablets and phones: the video moves under the search bar, full width */
+@media (max-width: 1100px) {
+    .hero { flex-direction: column; align-items: stretch; }
+    .hero-content { pointer-events: auto; }
+    .hero-video {
+        --video-fit: contain; position: relative; inset: auto; order: 2; z-index: 1;
+        width: 100%; max-width: 560px; aspect-ratio: var(--ratio); margin-top: 26px; border-radius: 14px;
+    }
+    .hero-video::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .welcome-btn-icon, .video-modal, .video-modal-box { animation: none; }
+    .hero-video-sound, .hero-video-spinner::after { animation: none; }
 }
