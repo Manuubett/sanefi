@@ -120,20 +120,190 @@ function adminRowHTML(id, data) {
     </div>`;
 }
 
+/* ================= OVERVIEW (KPIs + charts) ================= */
+
+const STATUS_COLORS = { approved: "#1e9e5a", pending: "#f0b429", booked: "#6b4fbb", rejected: "#d64545" };
+let adsSummary = null; // filled in by loadAds()
+
+function summarizeAds(docs) {
+  const active = docs.filter((d) => d.data().active !== false);
+  return {
+    active: active.length,
+    banners: active.filter((d) => d.data().placement !== "popup").length,
+    popups: active.filter((d) => d.data().placement === "popup").length
+  };
+}
+
+function updateAdsKpi() {
+  const val = document.getElementById("kpi-ads-val");
+  const sub = document.getElementById("kpi-ads-sub");
+  if (!val || !adsSummary) return;
+  val.textContent = adsSummary.active;
+  if (sub) sub.textContent = adsSummary.banners + " banner \u00b7 " + adsSummary.popups + " popup";
+}
+
+function countUp(el, target) {
+  if (!target) { el.textContent = "0"; return; }
+  const start = performance.now(), dur = 800;
+  (function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3))).toLocaleString();
+    if (t < 1) requestAnimationFrame(tick);
+  })(start);
+}
+
+function docDate(doc) {
+  const c = doc.data().createdAt;
+  return c && typeof c.toDate === "function" ? c.toDate() : null;
+}
+
+function donutHTML(counts) {
+  const order = [["approved", "Approved"], ["pending", "Pending review"], ["booked", "Booked"], ["rejected", "Rejected"]];
+  const total = order.reduce((s, o) => s + counts[o[0]], 0);
+  const R = 60, C = 2 * Math.PI * R;
+  let offset = 0;
+  const segs = order.filter((o) => counts[o[0]] > 0).map((o) => {
+    const len = (counts[o[0]] / total) * C;
+    const seg = `<circle class="donut-seg" cx="80" cy="80" r="${R}" fill="none" stroke="${STATUS_COLORS[o[0]]}" stroke-width="22"
+      style="stroke-dasharray:${len.toFixed(2)} ${C.toFixed(2)}; stroke-dashoffset:${(-offset).toFixed(2)}"></circle>`;
+    offset += len;
+    return seg;
+  }).join("");
+
+  const legend = order.map((o) => `
+      <div class="legend-row">
+        <span class="legend-dot" style="background:${STATUS_COLORS[o[0]]}"></span>
+        <span class="legend-label">${o[1]}</span>
+        <span class="legend-val">${counts[o[0]]}${total ? ` <small>${Math.round((counts[o[0]] / total) * 100)}%</small>` : ""}</span>
+      </div>`).join("");
+
+  return `
+    <div class="donut-wrap">
+      <svg viewBox="0 0 160 160" class="donut" role="img" aria-label="Listings by status">
+        <circle cx="80" cy="80" r="${R}" fill="none" stroke="#eef1f6" stroke-width="22"></circle>
+        <g transform="rotate(-90 80 80)">${segs}</g>
+        <text x="80" y="80" text-anchor="middle" class="donut-total">${total}</text>
+        <text x="80" y="98" text-anchor="middle" class="donut-sub">listings</text>
+      </svg>
+      <div class="legend">${legend}</div>
+    </div>`;
+}
+
+function monthlyChartHTML() {
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleString("en", { month: "short" }), n: 0 });
+  }
+  allDocs.forEach((doc) => {
+    const d = docDate(doc);
+    if (!d) return;
+    const hit = months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
+    if (hit) hit.n++;
+  });
+  const sum = months.reduce((s, x) => s + x.n, 0);
+  if (!sum) return { sum, html: `<p class="empty-state" style="padding:24px 0;">No new listings in the last 6 months.</p>` };
+
+  const max = Math.max(...months.map((x) => x.n));
+  const top = 24, H = 130, slot = (360 - 16) / 6, barW = 34;
+  const grid = [0, 0.5, 1].map((f) => {
+    const y = top + H - f * H;
+    return `<line class="bc-grid" x1="8" x2="352" y1="${y}" y2="${y}"></line>`;
+  }).join("");
+  const bars = months.map((x, i) => {
+    const h = x.n ? Math.max(3, (x.n / max) * H) : 0;
+    const bx = 8 + i * slot + (slot - barW) / 2;
+    return `
+      ${h ? `<rect class="bc-bar" style="--i:${i}" x="${bx.toFixed(1)}" y="${(top + H - h).toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" rx="6" fill="url(#gradPink)"></rect>` : ""}
+      <text class="bc-val" x="${(bx + barW / 2).toFixed(1)}" y="${(top + H - h - 7).toFixed(1)}" text-anchor="middle">${x.n || ""}</text>
+      <text class="bc-lab" x="${(bx + barW / 2).toFixed(1)}" y="${top + H + 20}" text-anchor="middle">${x.label}</text>`;
+  }).join("");
+
+  return {
+    sum,
+    html: `
+    <svg viewBox="0 0 360 190" class="bar-chart" role="img" aria-label="New listings per month">
+      <defs><linearGradient id="gradPink" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ff5cae"></stop><stop offset="1" stop-color="#e6007e"></stop>
+      </linearGradient></defs>
+      ${grid}${bars}
+    </svg>`
+  };
+}
+
+function hbarsHTML(field, unit, emptyMsg) {
+  const rows = [...allDocs]
+    .filter((doc) => Number(doc.data()[field] || 0) > 0)
+    .sort((a, b) => Number(b.data()[field] || 0) - Number(a.data()[field] || 0))
+    .slice(0, 5);
+  if (!rows.length) return `<p class="empty-state" style="padding:24px 0;">${emptyMsg}</p>`;
+  const max = Number(rows[0].data()[field]);
+  return rows.map((doc, i) => {
+    const v = Number(doc.data()[field] || 0);
+    return `
+      <div class="hbar-row">
+        <div class="hbar-top"><span class="hbar-title">${escapeHTML(doc.data().title || "Untitled listing")}</span><span class="hbar-val">${v.toLocaleString()} ${unit}</span></div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:${((v / max) * 100).toFixed(1)}%; animation-delay:${i * 80}ms"></div></div>
+      </div>`;
+  }).join("");
+}
+
+function typeBreakdownHTML() {
+  const counts = {};
+  allDocs.forEach((doc) => {
+    const d = doc.data();
+    const t = String(d.type || d.propertyType || d.category || "").trim();
+    if (t) counts[t] = (counts[t] || 0) + 1;
+  });
+  const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  if (!rows.length) return "";
+  const max = rows[0][1];
+  return `
+    <div class="chart-card">
+      <h4>Listings by type</h4><p class="chart-sub">What your inventory is made of</p>
+      ${rows.map((r, i) => `
+        <div class="hbar-row">
+          <div class="hbar-top"><span class="hbar-title">${escapeHTML(r[0])}</span><span class="hbar-val">${r[1]}</span></div>
+          <div class="hbar-track"><div class="hbar-fill alt" style="width:${((r[1] / max) * 100).toFixed(1)}%; animation-delay:${i * 80}ms"></div></div>
+        </div>`).join("")}
+    </div>`;
+}
+
+function recentListingsHTML() {
+  const rows = allDocs.slice(0, 5);
+  if (!rows.length) return `<p class="empty-state" style="padding:24px 0;">No listings yet.</p>`;
+  return rows.map((doc) => {
+    const d = doc.data();
+    const booked = (d.availability || "available") === "booked";
+    const status = d.status || "pending";
+    const label = booked ? "Booked" : status === "approved" ? "Approved" : status === "rejected" ? "Rejected" : "Pending";
+    const cls = booked ? "status-booked" : "status-" + status;
+    const photos = d.imageUrls && d.imageUrls.length ? d.imageUrls : [];
+    const cover = d.coverImageUrl && photos.includes(d.coverImageUrl) ? d.coverImageUrl : photos[0];
+    const when = docDate(doc);
+    return `
+      <div class="recent-row">
+        <img class="recent-thumb" src="${escapeAttr(cover) || 'https://placehold.co/52x40?text=-'}" alt="">
+        <div class="recent-info">
+          <strong>${escapeHTML(d.title || "Untitled listing")}</strong>
+          <span>${escapeHTML(d.location || "")}${when ? " \u00b7 " + when.toLocaleDateString("en-KE", { day: "numeric", month: "short" }) : ""}</span>
+        </div>
+        <span class="admin-row-status ${cls}">${label}</span>
+      </div>`;
+  }).join("");
+}
+
 function renderDashboard() {
   const total = allDocs.length;
   const counts = { pending: 0, approved: 0, rejected: 0, booked: 0 };
+  let totalViews = 0, totalSaves = 0;
   allDocs.forEach((doc) => {
     if (isBooked(doc)) counts.booked++;
     else if (counts[getStatus(doc)] !== undefined) counts[getStatus(doc)]++;
+    totalViews += Number(doc.data().views || 0);
+    totalSaves += Number(doc.data().savesCount || 0);
   });
-
-  dashboardStats.innerHTML = `
-    <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Total Listings</div></div>
-    <div class="stat-card"><div class="stat-number">${counts.pending}</div><div class="stat-label">Pending Review</div></div>
-    <div class="stat-card"><div class="stat-number">${counts.approved}</div><div class="stat-label">Approved</div></div>
-    <div class="stat-card"><div class="stat-number">${counts.booked}</div><div class="stat-label">Booked</div></div>
-    <div class="stat-card"><div class="stat-number">${counts.rejected}</div><div class="stat-label">Rejected</div></div>`;
 
   // sidebar badge: number of listings waiting for review
   const pendingBadge = document.getElementById("nav-pending-badge");
@@ -142,23 +312,53 @@ function renderDashboard() {
     pendingBadge.style.display = counts.pending ? "inline-block" : "none";
   }
 
-  const topByField = (field, label, emptyLabel) => {
-    const sorted = [...allDocs]
-      .filter((doc) => Number(doc.data()[field] || 0) > 0)
-      .sort((a, b) => Number(b.data()[field] || 0) - Number(a.data()[field] || 0))
-      .slice(0, 5);
-    return sorted.length
-      ? sorted.map((doc) => `
-          <div class="top-list-row">
-            <span class="tl-title">${escapeHTML(doc.data().title || "Untitled listing")}</span>
-            <span class="tl-count">${Number(doc.data()[field] || 0)} ${label}</span>
-          </div>`).join("")
-      : `<p class="empty-state" style="padding:10px 0;">${emptyLabel}</p>`;
-  };
+  // greeting line
+  const greet = document.getElementById("overview-greeting");
+  if (greet) {
+    const email = (typeof auth !== "undefined" && auth.currentUser && auth.currentUser.email) || "";
+    const name = email ? email.split("@")[0] : "admin";
+    greet.textContent = "Welcome back, " + name + " \u00b7 " +
+      new Date().toLocaleDateString("en-KE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  }
 
+  // "needs attention" banner
+  const alertBox = document.getElementById("dashboard-alert");
+  if (alertBox) {
+    alertBox.innerHTML = counts.pending
+      ? `<div class="dash-alert warn"><span>&#9203; ${counts.pending} listing${counts.pending > 1 ? "s are" : " is"} waiting for your review.</span>
+           <button type="button" class="dash-alert-btn" id="dash-review-btn">Review now &rarr;</button></div>`
+      : `<div class="dash-alert ok"><span>&#10003; You're all caught up &mdash; nothing is waiting for review.</span></div>`;
+    const reviewBtn = document.getElementById("dash-review-btn");
+    if (reviewBtn) reviewBtn.addEventListener("click", () => {
+      activeTab = "pending"; renderTabs(); renderList();
+      location.hash = "listings";
+    });
+  }
+
+  // KPI cards
+  dashboardStats.innerHTML = `
+    <div class="kpi-card"><div class="kpi-icon kpi-blue">&#127968;</div><div class="kpi-body">
+      <div class="kpi-num" data-count="${total}">0</div><div class="kpi-label">Total listings</div><div class="kpi-sub">${counts.approved} live on the site</div></div></div>
+    <div class="kpi-card ${counts.pending ? "kpi-attention" : ""}"><div class="kpi-icon kpi-amber">&#9203;</div><div class="kpi-body">
+      <div class="kpi-num" data-count="${counts.pending}">0</div><div class="kpi-label">Pending review</div><div class="kpi-sub">${counts.pending ? "needs your attention" : "all clear"}</div></div></div>
+    <div class="kpi-card"><div class="kpi-icon kpi-green">&#128065;</div><div class="kpi-body">
+      <div class="kpi-num" data-count="${totalViews}">0</div><div class="kpi-label">Total views</div><div class="kpi-sub">across all listings</div></div></div>
+    <div class="kpi-card"><div class="kpi-icon kpi-pink">&#10084;</div><div class="kpi-body">
+      <div class="kpi-num" data-count="${totalSaves}">0</div><div class="kpi-label">Total saves</div><div class="kpi-sub">visitors' favourites</div></div></div>
+    <div class="kpi-card"><div class="kpi-icon kpi-purple">&#128226;</div><div class="kpi-body">
+      <div class="kpi-num" id="kpi-ads-val">&ndash;</div><div class="kpi-label">Active adverts</div><div class="kpi-sub" id="kpi-ads-sub">loading&hellip;</div></div></div>`;
+  dashboardStats.querySelectorAll("[data-count]").forEach((el) => countUp(el, Number(el.dataset.count)));
+  updateAdsKpi();
+
+  // charts
+  const monthly = monthlyChartHTML();
   dashboardTopLists.innerHTML = `
-    <div class="top-list-card"><h4>&#10084; Most Saved</h4>${topByField("savesCount", "saves", "No saves yet.")}</div>
-    <div class="top-list-card"><h4>&#128065; Most Viewed</h4>${topByField("views", "views", "No views yet.")}</div>`;
+    <div class="chart-card"><h4>Listings by status</h4><p class="chart-sub">Where every listing stands right now</p>${donutHTML(counts)}</div>
+    <div class="chart-card"><h4>New listings per month</h4><p class="chart-sub">${monthly.sum} added in the last 6 months</p>${monthly.html}</div>
+    <div class="chart-card"><h4>&#128065; Most viewed</h4><p class="chart-sub">Your top 5 listings by views</p>${hbarsHTML("views", "views", "No views yet.")}</div>
+    <div class="chart-card"><h4>&#10084; Most saved</h4><p class="chart-sub">Your top 5 listings by saves</p>${hbarsHTML("savesCount", "saves", "No saves yet.")}</div>
+    <div class="chart-card"><h4>Recently added</h4><p class="chart-sub">The latest 5 listings</p>${recentListingsHTML()}</div>
+    ${typeBreakdownHTML()}`;
 }
 
 function renderTabs() {
@@ -379,6 +579,8 @@ function loadAds() {
   adsListBox.innerHTML = `<p class="empty-state">Loading adverts&hellip;</p>`;
   db.collection("ads").orderBy("createdAt", "desc").get()
     .then((snapshot) => {
+      adsSummary = summarizeAds(snapshot.docs);
+      updateAdsKpi();
       if (snapshot.empty) {
         adsListBox.innerHTML = `<p class="empty-state">No adverts yet &mdash; add one below.</p>`;
         return;
